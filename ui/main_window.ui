@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect><x>0</x><y>0</y><width>1050</width><height>700</height></rect>
+  </property>
+  <property name="windowTitle">
+   <string>NCC UHF Manager</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <layout class="QVBoxLayout" name="verticalLayoutMain">
+
+    <item>
+     <layout class="QHBoxLayout" name="layoutToolbar">
+      <item><widget class="QPushButton" name="buttonConnect"><property name="text"><string>接続</string></property></widget></item>
+      <item><widget class="QPushButton" name="buttonStart"><property name="text"><string>読取開始</string></property></widget></item>
+      <item><widget class="QPushButton" name="buttonStop"><property name="text"><string>停止</string></property></widget></item>
+      <item><widget class="QPushButton" name="buttonClear"><property name="text"><string>クリア</string></property></widget></item>
+      <item><widget class="QPushButton" name="buttonSettings"><property name="text"><string>設定</string></property></widget></item>
+      <item><widget class="QPushButton" name="buttonSaveCsv"><property name="text"><string>CSV保存</string></property></widget></item>
+      <item><widget class="QPushButton" name="buttonLoadBooks"><property name="text"><string>書籍マスタ取込</string></property></widget></item>
+      <item><spacer name="horizontalSpacer"><property name="orientation"><enum>Qt::Horizontal</enum></property></spacer></item>
+      <item><widget class="QLabel" name="labelClock"><property name="text"><string>-</string></property></widget></item>
+      <item><widget class="QLabel" name="labelClock"><property name="text"><string>-</string></property></widget></item>
+     </layout>
+    </item>
+
+    <item>
+     <layout class="QHBoxLayout" name="layoutContent" stretch="7,3">
+
+      <item>
+       <layout class="QVBoxLayout" name="layoutLeft">
+        <item>
+         <widget class="QTableWidget" name="tableTags"/>
+        </item>
+       </layout>
+      </item>
+
+      <item>
+       <layout class="QVBoxLayout" name="layoutRight">
+
+        <item>
+         <widget class="QGroupBox" name="groupReader">
+          <property name="title"><string>Reader情報</string></property>
+          <layout class="QFormLayout" name="formLayoutReader">
+           <item row="0" column="0"><widget class="QLabel" name="labelReaderModelTitle"><property name="text"><string>機種</string></property></widget></item>
+           <item row="0" column="1"><widget class="QLabel" name="labelReaderModel"><property name="text"><string>-</string></property></widget></item>
+
+           <item row="1" column="0"><widget class="QLabel" name="labelReaderStatusTitle"><property name="text"><string>接続状態</string></property></widget></item>
+           <item row="1" column="1"><widget class="QLabel" name="labelReaderConnectionStatus"><property name="text"><string>-</string></property></widget></item>
+
+           <item row="2" column="0"><widget class="QLabel" name="labelReaderConnectionTypeTitle"><property name="text"><string>接続方式</string></property></widget></item>
+           <item row="2" column="1"><widget class="QLabel" name="labelReaderConnectionType"><property name="text"><string>-</string></property></widget></item>
+
+           <item row="3" column="0"><widget class="QLabel" name="labelReaderTargetTitle"><property name="text"><string>接続先</string></property></widget></item>
+           <item row="3" column="1"><widget class="QLabel" name="labelReaderTarget"><property name="text"><string>-</string></property></widget></item>
+
+           <item row="4" column="0"><widget class="QLabel" name="labelReaderAntennaTitle"><property name="text"><string>現在ANT</string></property></widget></item>
+           <item row="4" column="1"><widget class="QLabel" name="labelReaderAntenna"><property name="text"><string>-</string></property></widget></item>
+
+           <item row="5" column="0"><widget class="QLabel" name="labelReaderTxPowerTitle"><property name="text"><string>送信出力</string></property></widget></item>
+           <item row="5" column="1"><widget class="QLabel" name="labelReaderTxPower"><property name="text"><string>-</string></property></widget></item>
+
+           <item row="6" column="0"><widget class="QLabel" name="labelReaderDetectCountTitle"><property name="text"><string>検出冊数</string></property></widget></item>
+           <item row="6" column="1"><widget class="QLabel" name="labelReaderDetectCount"><property name="text"><string>-</string></property></widget></item>
+          </layout>
+         </widget>
+        </item>
+
+        <item>
+         <widget class="QGroupBox" name="groupLog">
+          <property name="title"><string>操作ログ</string></property>
+          <layout class="QVBoxLayout" name="layoutGroupLog">
+           <item><widget class="QTextEdit" name="textLog"/></item>
+          </layout>
+         </widget>
+        </item>
+
+       </layout>
+      </item>
+
+     </layout>
+    </item>
+
+   </layout>
+  </widget>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

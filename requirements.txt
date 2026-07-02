@@ -1,0 +1,4 @@
+PySide6
+pyserial
+qt-material
+pyside6-utils
