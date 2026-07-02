@@ -30,6 +30,7 @@ from PySide6.QtWidgets import (
 )
 
 from reader.uhf_reader import UHFReader
+from dialogs.detail_dialog import show_tag_detail
 from widgets.table_items import make_table_item, shorten_text, status_item, set_rssi_cell
 from serial.tools import list_ports
 from PySide6.QtGui import QIcon
@@ -149,32 +150,6 @@ def set_row_detail(row, epc, title, rssi, ant, status):
 def update_row_detail_status(row, status):
     if row in table_details_by_row:
         table_details_by_row[row]["status"] = status
-
-
-def show_tag_detail(row, column):
-    info = table_details_by_row.get(row)
-    if not info:
-        return
-
-    title = info.get("title", "-")
-    epc = info.get("epc", "-")
-    rssi = info.get("rssi", "-")
-    ant = info.get("ant", "-")
-    status = info.get("status", "-")
-    level = rssi_level_text(rssi)
-
-    QMessageBox.information(
-        window,
-        "タグ詳細",
-        f"書籍名\n{title}\n\n"
-        f"EPC\n{epc}\n\n"
-        f"読取強度\n{rssi} dBm（{level}）\n\n"
-        f"ANT\n{ant}\n\n"
-        f"状態\n{status}"
-    )
-
-
-
 
 
 
@@ -1218,7 +1193,7 @@ if hasattr(window, "buttonSaveCsv"):
 
 if hasattr(window, "buttonLoadBooks"):
     window.buttonLoadBooks.clicked.connect(load_books)
-window.tableTags.cellDoubleClicked.connect(show_tag_detail)
+window.tableTags.cellDoubleClicked.connect(lambda row, column: show_tag_detail(window, table_details_by_row, row, column))
 
 if hasattr(window, "buttonRanking"):
     window.buttonRanking.clicked.connect(show_ranking)
