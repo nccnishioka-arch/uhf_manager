@@ -4,7 +4,6 @@ import html
 import json
 import os
 import sqlite3
-import socket
 import sys
 
 from app_config import APP_VERSION, DB_PATH, SETTINGS_PATH, DEFAULT_SETTINGS
@@ -1092,30 +1091,24 @@ def show_settings():
         connection_type = dialog.comboConnectionType.currentText()
 
         try:
-            if connection_type=="LAN":
+            if connection_type == "LAN":
+                host = dialog.lineHost.text().strip()
+                tcp_port = int(dialog.spinTcpPort.value())
 
-                host=dialog.lineHost.text().strip()
-                tcp_port=int(dialog.spinTcpPort.value())
-
-                test_reader=UHFReader()
-
+                test_reader = UHFReader()
                 try:
-                    if test_reader.connect_tcp(host,tcp_port):
-
+                    if test_reader.connect_tcp(host, tcp_port):
                         QMessageBox.information(
                             dialog,
                             "接続テスト",
                             f"LAN接続成功\n{host}:{tcp_port}"
                         )
-
                     else:
-
                         QMessageBox.warning(
                             dialog,
                             "接続テスト",
                             f"LAN接続失敗\n{host}:{tcp_port}"
                         )
-
                 finally:
                     test_reader.close()
 
@@ -1139,17 +1132,6 @@ def show_settings():
                         )
                 finally:
                     test_reader.close()
-
-            elif connection_type == "LAN":
-                host = dialog.lineHost.text().strip()
-                tcp_port = int(dialog.spinTcpPort.value())
-
-                with socket.create_connection((host, tcp_port), timeout=3):
-                    QMessageBox.information(
-                        dialog,
-                        "接続テスト",
-                        f"LAN 接続成功\n{host}:{tcp_port}"
-                    )
 
             else:
                 QMessageBox.warning(
@@ -1200,9 +1182,6 @@ setup_ui_polish()
 setup_dashboard_cards()
 
 timer.timeout.connect(read_once)
-clock_timer.timeout.connect(update_clock)
-clock_timer.start()
-update_clock()
 clock_timer.timeout.connect(update_clock)
 clock_timer.start()
 update_clock()
