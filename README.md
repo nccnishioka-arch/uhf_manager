@@ -28,5 +28,4 @@ Windows / Raspberry Pi 対応 UHF RFID 管理アプリケーション
 
 
 
-Current Version : v0.12.2
-
+Current Version : v0.12.4
