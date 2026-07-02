@@ -126,8 +126,6 @@ def show_settings(parent_window, reader, settings, timer, log_func):
         else:
             dialog.labelReaderStatus.setText("ANT数　　 - / 出力: -")
 
-    result = {"saved": False}
-
     def save_and_close():
         settings["connection_type"] = dialog.comboConnectionType.currentText()
         settings["port"] = dialog.linePort.text().strip() or "/dev/ttyUSB0"
@@ -148,7 +146,6 @@ def show_settings(parent_window, reader, settings, timer, log_func):
         timer.setInterval(int(settings.get("read_interval_ms", 500)))
 
         log_func("設定を保存しました")
-        result["saved"] = True
         dialog.accept()
 
     dialog.buttonSave.clicked.connect(save_and_close)
@@ -217,9 +214,9 @@ def show_settings(parent_window, reader, settings, timer, log_func):
     if hasattr(dialog, "buttonTestConnection"):
         dialog.buttonTestConnection.clicked.connect(test_connection)
 
-    dialog.exec()
+    accepted = dialog.exec()
 
-    if result["saved"]:
+    if accepted:
         return (
             int(settings.get("lost_timeout_sec", 10)),
             settings.get("bookmaster_path", "/home/ncc/ドキュメント/bookmaster.csv"),
