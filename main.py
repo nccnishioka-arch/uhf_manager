@@ -1,37 +1,31 @@
 import resources_rc
 import csv
 import html
-import json
 import os
-import sqlite3
 import sys
 
-from app_config import APP_VERSION, DB_PATH, SETTINGS_PATH, DEFAULT_SETTINGS
-from services.settings_service import load_settings, save_settings
+from app_config import APP_VERSION
+from services.settings_service import load_settings
 from services.database_service import get_connection, ensure_database
 from datetime import datetime
 
 from PySide6.QtCore import QFile, QTimer, Qt
-from PySide6.QtGui import QColor
+from PySide6.QtGui import QColor, QIcon
 from PySide6.QtUiTools import QUiLoader
 from qt_material import apply_stylesheet
 
 from PySide6.QtWidgets import (
     QApplication,
     QFileDialog,
-    QFrame,
     QHeaderView,
-    QDialog,
     QLabel,
     QMessageBox,
-    QStyle,
     QTableWidgetItem,
 )
 
 from reader.uhf_reader import UHFReader
 from widgets.table_items import make_table_item, shorten_text, status_item, set_rssi_cell
-from serial.tools import list_ports
-from PySide6.QtGui import QIcon
+from dialogs import settings_dialog
 
 settings = load_settings()
 LOST_TIMEOUT_SEC = int(settings.get("lost_timeout_sec", 10))
@@ -944,214 +938,13 @@ def show_ranking():
 
 
 
-def detect_serial_ports():
-    ports = []
-
-    for port in list_ports.comports():
-        device = port.device
-        desc = port.description or ""
-
-        if not device:
-            continue
-
-        ports.append({
-            "device": device,
-            "description": desc,
-            "vid": port.vid,
-            "pid": port.pid,
-        })
-
-    return ports
-
-
-def get_preferred_serial_port():
-    ports = detect_serial_ports()
-
-    # FTDI FT230X / FTDI系を優先
-    for port in ports:
-        desc = (port.get("description") or "").lower()
-        vid = port.get("vid")
-        pid = port.get("pid")
-
-        if vid == 0x0403 and pid == 0x6015:
-            return port["device"]
-
-        if "ftdi" in desc or "ft230x" in desc:
-            return port["device"]
-
-    # 次に ttyUSB を優先
-    for port in ports:
-        if port["device"].startswith("/dev/ttyUSB"):
-            return port["device"]
-
-    # その他
-    if ports:
-        return ports[0]["device"]
-
-    return ""
-
 
 def show_settings():
     global settings, LOST_TIMEOUT_SEC, AUTO_BOOKMASTER_PATH
 
-    ui_file = QFile("ui/settings_dialog.ui")
-    ui_file.open(QFile.ReadOnly)
-
-    loader = QUiLoader()
-    dialog = loader.load(ui_file, window)
-    ui_file.close()
-
-    dialog.comboConnectionType.setCurrentText(settings.get("connection_type", "USB"))
-    detected_port = get_preferred_serial_port()
-    configured_port = settings.get("port", "/dev/ttyUSB0")
-    dialog.linePort.setText(configured_port or detected_port or "/dev/ttyUSB0")
-    dialog.lineHost.setText(settings.get("host", "192.168.1.100"))
-    dialog.spinTcpPort.setValue(int(settings.get("tcp_port", 10001)))
-    dialog.comboBaudrate.setCurrentText(str(settings.get("baudrate", 115200)))
-    dialog.comboAntennaCount.setCurrentText(str(settings.get("antenna_count", 1)))
-    dialog.checkAutoConnect.setChecked(bool(settings.get("auto_connect", True)))
-    dialog.checkAutoLoadBooks.setChecked(bool(settings.get("auto_load_books", True)))
-    dialog.checkAutoStartReading.setChecked(bool(settings.get("auto_start_reading", True)))
-    dialog.lineBookmasterPath.setText(settings.get("bookmaster_path", "/home/ncc/ドキュメント/bookmaster.csv"))
-    dialog.spinReadInterval.setValue(int(settings.get("read_interval_ms", 500)))
-    dialog.spinLostTimeout.setValue(int(settings.get("lost_timeout_sec", 10)))
-    dialog.spinTxPower.setValue(int(settings.get("tx_power", 2400)))
-
-    def update_connection_fields():
-        connection_type = dialog.comboConnectionType.currentText()
-
-        is_lan = connection_type == "LAN"
-        is_serial = connection_type in ("USB", "232C(UART)")
-
-        dialog.linePort.setEnabled(is_serial)
-        dialog.comboBaudrate.setEnabled(is_serial)
-
-        dialog.lineHost.setEnabled(is_lan)
-        dialog.spinTcpPort.setEnabled(is_lan)
-
-    dialog.comboConnectionType.currentTextChanged.connect(update_connection_fields)
-    update_connection_fields()
-
-    if hasattr(dialog, "labelReaderConnection"):
-        connection_type = settings.get("connection_type", "USB")
-        if connection_type == "LAN":
-            target = f'{settings.get("host", "-")}:{settings.get("tcp_port", "-")}'
-        else:
-            target = settings.get("port", "-")
-        dialog.labelReaderConnection.setText(f"接続: {connection_type} / {target}")
-
-    if hasattr(dialog, "labelReaderStatus"):
-        if reader.is_connected():
-            try:
-                current_ant = reader.get_antenna()
-            except Exception:
-                current_ant = "-"
-
-            try:
-                current_tx_power = reader.get_tx_power()
-            except Exception:
-                current_tx_power = "-"
-
-            dialog.labelReaderStatus.setText(
-                f"ANT数　　 {current_ant} / 出力: {current_tx_power}"
-            )
-        else:
-            dialog.labelReaderStatus.setText("ANT数　　 - / 出力: -")
-
-    def save_and_close():
-        global settings, LOST_TIMEOUT_SEC, AUTO_BOOKMASTER_PATH
-
-        settings["connection_type"] = dialog.comboConnectionType.currentText()
-        settings["port"] = dialog.linePort.text().strip() or "/dev/ttyUSB0"
-        settings["host"] = dialog.lineHost.text().strip() or "192.168.1.100"
-        settings["tcp_port"] = int(dialog.spinTcpPort.value())
-        settings["baudrate"] = int(dialog.comboBaudrate.currentText())
-        settings["antenna_count"] = int(dialog.comboAntennaCount.currentText())
-        settings["auto_connect"] = dialog.checkAutoConnect.isChecked()
-        settings["auto_load_books"] = dialog.checkAutoLoadBooks.isChecked()
-        settings["auto_start_reading"] = dialog.checkAutoStartReading.isChecked()
-        settings["bookmaster_path"] = dialog.lineBookmasterPath.text().strip()
-        settings["read_interval_ms"] = int(dialog.spinReadInterval.value())
-        settings["lost_timeout_sec"] = int(dialog.spinLostTimeout.value())
-        settings["tx_power"] = int(dialog.spinTxPower.value())
-
-        save_settings(settings)
-
-        LOST_TIMEOUT_SEC = int(settings.get("lost_timeout_sec", 10))
-        AUTO_BOOKMASTER_PATH = settings.get("bookmaster_path", "/home/ncc/ドキュメント/bookmaster.csv")
-        timer.setInterval(int(settings.get("read_interval_ms", 500)))
-
-        log("設定を保存しました")
-        dialog.accept()
-
-    dialog.buttonSave.clicked.connect(save_and_close)
-    dialog.buttonCancel.clicked.connect(dialog.reject)
-
-    def test_connection():
-        connection_type = dialog.comboConnectionType.currentText()
-
-        try:
-            if connection_type == "LAN":
-                host = dialog.lineHost.text().strip()
-                tcp_port = int(dialog.spinTcpPort.value())
-
-                test_reader = UHFReader()
-                try:
-                    if test_reader.connect_tcp(host, tcp_port):
-                        QMessageBox.information(
-                            dialog,
-                            "接続テスト",
-                            f"LAN接続成功\n{host}:{tcp_port}"
-                        )
-                    else:
-                        QMessageBox.warning(
-                            dialog,
-                            "接続テスト",
-                            f"LAN接続失敗\n{host}:{tcp_port}"
-                        )
-                finally:
-                    test_reader.close()
-
-            elif connection_type in ("USB", "232C(UART)"):
-                port = dialog.linePort.text().strip() or get_preferred_serial_port() or "/dev/ttyUSB0"
-                baudrate = int(dialog.comboBaudrate.currentText())
-
-                test_reader = UHFReader()
-                try:
-                    if test_reader.connect(port, baudrate):
-                        QMessageBox.information(
-                            dialog,
-                            "接続テスト",
-                            f"{connection_type} 接続成功\n{port} / {baudrate}bps"
-                        )
-                    else:
-                        QMessageBox.warning(
-                            dialog,
-                            "接続テスト",
-                            f"{connection_type} 接続失敗\n{port}"
-                        )
-                finally:
-                    test_reader.close()
-
-            else:
-                QMessageBox.warning(
-                    dialog,
-                    "接続テスト",
-                    f"未対応の接続方式です: {connection_type}"
-                )
-
-        except Exception as e:
-            QMessageBox.warning(
-                dialog,
-                "接続テスト",
-                f"接続失敗\n{e}"
-            )
-
-    if hasattr(dialog, "buttonTestConnection"):
-        dialog.buttonTestConnection.clicked.connect(test_connection)
-
-    dialog.exec()
-
+    result = settings_dialog.show_settings(window, reader, settings, timer, log)
+    if result is not None:
+        LOST_TIMEOUT_SEC, AUTO_BOOKMASTER_PATH = result
 
 def auto_startup():
     if settings.get("auto_connect", True):
