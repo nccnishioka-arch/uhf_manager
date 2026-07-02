@@ -11,9 +11,9 @@ class ReaderManager:
 
         if connection_type == "USB":
             return UsbReader(settings)
-        if connection_type == "UART":
+        elif connection_type == "UART":
             return UartReader(settings)
-        if connection_type == "LAN":
+        elif connection_type == "LAN":
             return TcpReader(settings)
 
         raise ReaderConnectionError(f"Unsupported connection type: {connection_type}")

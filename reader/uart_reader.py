@@ -48,7 +48,5 @@ class UartReader(BaseReader):
         return self._reader.get_tx_power()
 
     def read_tags(self):
+        """UHFReader 互換エイリアス。read_once() と同等。"""
         return self._reader.read_tags()
-
-    def close(self):
-        self._reader.close()

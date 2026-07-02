@@ -650,24 +650,16 @@ def connect_reader():
         if connection_type == "LAN":
             host = settings.get("host", "192.168.1.100")
             tcp_port = int(settings.get("tcp_port", 10001))
-
-            if reader.connect_tcp(host, tcp_port):
-                log(f"LAN接続成功 ({host}:{tcp_port})", "SUCCESS")
-            else:
-                log(f"LAN接続失敗 ({host}:{tcp_port})", "ERROR")
-                update_dashboard_cards()
-                return
-
+            target_label = f"{host}:{tcp_port}"
         else:
-            port = settings.get("port", "/dev/ttyUSB0")
-            baudrate = int(settings.get("baudrate", 115200))
+            target_label = settings.get("port", "/dev/ttyUSB0")
 
-            if reader.connect(port, baudrate):
-                log(f"USB接続成功 ({port})", "SUCCESS")
-            else:
-                log(f"USB接続失敗 ({port})", "ERROR")
-                update_dashboard_cards()
-                return
+        if reader.connect():
+            log(f"{connection_type}接続成功 ({target_label})", "SUCCESS")
+        else:
+            log(f"{connection_type}接続失敗 ({target_label})", "ERROR")
+            update_dashboard_cards()
+            return
 
         try:
             tx_power = int(settings.get("tx_power", 2400))

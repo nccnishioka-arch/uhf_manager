@@ -44,10 +44,5 @@ class UsbReader(BaseReader):
         return self._reader.get_tx_power()
 
     def read_tags(self):
+        """UHFReader 互換エイリアス。read_once() と同等。"""
         return self._reader.read_tags()
-
-    def connect_tcp(self, host, port, timeout=3):
-        return self._reader.connect_tcp(host, port, timeout)
-
-    def close(self):
-        self._reader.close()
