@@ -28,7 +28,19 @@ Windows / Raspberry Pi 対応 UHF RFID 管理アプリケーション
 
 
 
-Current Version : v0.12.5
+Current Version : v0.12.6
+
+## v0.12.6
+
+- `reader/` 配下に Reader 抽象化基盤を追加
+- `reader/connection_state.py` : 通信状態 Enum を追加
+- `reader/exceptions.py` : Reader 共通例外クラスを追加
+- `reader/base_reader.py` : Reader 共通基底クラス `BaseReader` を追加
+- `reader/usb_reader.py` : USB接続用 `UsbReader` を追加（`UHFReader` をラップ）
+- `reader/uart_reader.py` : UART接続用 `UartReader` を追加
+- `reader/tcp_reader.py` : LAN/TCP接続用 `TcpReader` を追加
+- `reader/reader_manager.py` : 接続方式に応じて Reader を生成する `ReaderManager` を追加
+- `main.py` で `ReaderManager.create(settings)` を使用するよう変更
 
 ## v0.12.5
 

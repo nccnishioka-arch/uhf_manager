@@ -23,7 +23,7 @@ from PySide6.QtWidgets import (
     QTableWidgetItem,
 )
 
-from reader.uhf_reader import UHFReader
+from reader.reader_manager import ReaderManager
 from widgets.table_items import make_table_item, shorten_text, status_item, set_rssi_cell
 from dialogs import settings_dialog
 
@@ -57,7 +57,7 @@ ui_file.close()
 
 window.setWindowTitle(f"NCC UHF Manager {APP_VERSION}")
 
-reader = UHFReader()
+reader = ReaderManager.create(settings)
 seen_epcs = set()
 
 timer = QTimer()
