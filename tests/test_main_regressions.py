@@ -614,6 +614,87 @@ class MainRegressionTests(unittest.TestCase):
         self.assertEqual(table_details_by_row[dup_row]["ant"], 2)
         self.assertEqual(table_details_by_row[dup_row]["rssi"], -60)
 
+    def _make_read_once_globals(self, tags_by_read, antenna_count=3):
+        """共通 globals_dict を組み立てるヘルパー。"""
+        table = _FakeEditableTable()
+        table_rows_by_epc = {}
+        table_details_by_row = {}
+        return {
+            "reader": _FakeReader(tags_by_read=tags_by_read),
+            "settings": {"connection_type": "LAN", "antenna_count": antenna_count},
+            "seen_epcs": set(),
+            "table_rows_by_epc": table_rows_by_epc,
+            "table_details_by_row": table_details_by_row,
+            "window": SimpleNamespace(tableTags=table),
+            "QTableWidgetItem": _FakeTableItem,
+            "make_table_item": lambda text, tooltip=None: _FakeTableItem(text),
+            "shorten_text": lambda text, max_len=42: text,
+            "set_rssi_cell": lambda tbl, row, col, rssi: tbl.setItem(
+                row, col, _FakeTableItem(str(rssi))
+            ),
+            "set_status_cell": lambda row, col, status: table.setItem(
+                row, col, _FakeTableItem(status)
+            ),
+            "set_row_detail": lambda row, epc, title, rssi, ant, status: table_details_by_row.update(
+                {row: {"epc": epc, "title": title, "rssi": rssi, "ant": ant, "status": status}}
+            ),
+            "get_book_title": lambda epc: f"title:{epc}",
+            "save_book_event": lambda epc, rssi, ant: None,
+            "check_movements": lambda epcs: None,
+            "update_dashboard_cards": lambda: None,
+            "log": lambda *args, **kwargs: None,
+            "latest_read_title": "-",
+            "latest_read_epc": "-",
+            "latest_detect_count": 0,
+        }, table, table_rows_by_epc, table_details_by_row
+
+    def test_read_once_handles_invalid_rssi_values(self):
+        """None / "-" / 文字列 の RSSI が来ても例外で落ちず、弱い値として扱われること。"""
+        # ANT1: rssi=None, ANT2: rssi="-", ANT3: rssi="bad", ANT4: rssi=-65 (正常)
+        tags_by_read = [
+            [{"epc": "E200RSSI", "rssi": None}],
+            [{"epc": "E200RSSI", "rssi": "-"}],
+            [{"epc": "E200RSSI", "rssi": "bad"}],
+            [{"epc": "E200RSSI", "rssi": -65}],
+        ]
+        globals_dict, table, table_rows_by_epc, table_details_by_row = (
+            self._make_read_once_globals(tags_by_read, antenna_count=4)
+        )
+        read_once = load_main_function("read_once", globals_dict)
+
+        # 例外なく実行できること
+        try:
+            read_once()
+        except Exception as e:
+            self.fail(f"read_once() raised {e!r} with bad RSSI values")
+
+        # EPC は1行にまとまること
+        self.assertEqual(table.rowCount(), 1)
+        self.assertIn("E200RSSI", table_rows_by_epc)
+
+        # 正常な RSSI -65 が最終的に採用されること（最強値として残る）
+        row = table_rows_by_epc["E200RSSI"]
+        self.assertEqual(table_details_by_row[row]["rssi"], -65)
+
+    def test_read_once_handles_all_invalid_rssi_values(self):
+        """全 ANT で RSSI が不正でも例外なく動作し EPC は1行になること。"""
+        tags_by_read = [
+            [{"epc": "E200BAD", "rssi": None}],
+            [{"epc": "E200BAD", "rssi": "-"}],
+        ]
+        globals_dict, table, table_rows_by_epc, _ = (
+            self._make_read_once_globals(tags_by_read, antenna_count=2)
+        )
+        read_once = load_main_function("read_once", globals_dict)
+
+        try:
+            read_once()
+        except Exception as e:
+            self.fail(f"read_once() raised {e!r} with all-bad RSSI values")
+
+        self.assertEqual(table.rowCount(), 1)
+        self.assertIn("E200BAD", table_rows_by_epc)
+
     def test_update_dashboard_cards_shows_configured_antenna_count(self):
         labels = {
             "labelReaderModel": _FakeLabel(),
