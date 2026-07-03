@@ -3,7 +3,7 @@ import socket
 from reader.base_reader import BaseReader
 from reader.connection_state import ConnectionState
 from reader.exceptions import ReaderConnectionError, ReaderProtocolError
-from reader.protocol import HEADER_SIZE, build_command, get_data_length
+from reader.protocol import HEADER_SIZE, get_data_length
 from reader.protocol.artfinex_protocol import (
     build_get_tx_power_command,
     build_set_tx_power_command,
@@ -109,23 +109,13 @@ class TcpReader(BaseReader):
         body = self._recv_exact(data_len + 1)
         return header + body
 
-    # --- アンテナ操作 ---
+    # --- 将来実装予定（アンテナ切替は対象外） ---
 
     def set_antenna(self, ant_no):
-        self._send(build_command(0x82, bytes([ant_no])))
-        response = self._read_response()
-        body = response[HEADER_SIZE:-1] if len(response) > HEADER_SIZE + 1 else b""
-        if len(body) == 0:
-            return True
-        return body[0] == 0
+        raise NotImplementedError
 
     def get_antenna(self):
-        self._send(build_command(0x83))
-        response = self._read_response()
-        body = response[HEADER_SIZE:-1] if len(response) > HEADER_SIZE + 1 else b""
-        if len(body) < 1:
-            return None
-        return body[0]
+        raise NotImplementedError
 
     def set_tx_power(self, power):
         self._send(build_set_tx_power_command(power))
