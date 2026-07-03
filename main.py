@@ -55,7 +55,7 @@ loader = QUiLoader()
 window = loader.load(ui_file)
 ui_file.close()
 
-window.setWindowTitle(f"NCC UHF Manager {APP_VERSION}")
+window.setWindowTitle(f"NCC UHF Manager v{APP_VERSION}")
 
 reader = ReaderManager.create(settings)
 seen_epcs = set()
@@ -987,7 +987,7 @@ window.tableTags.cellDoubleClicked.connect(show_tag_detail)
 if hasattr(window, "buttonRanking"):
     window.buttonRanking.clicked.connect(show_ranking)
 
-log(f"NCC UHF Manager {APP_VERSION} 起動")
+log(f"NCC UHF Manager v{APP_VERSION} 起動")
 
 if hasattr(window, "labelStatus"):
     window.labelStatus.setText("接続状態: 未接続")
