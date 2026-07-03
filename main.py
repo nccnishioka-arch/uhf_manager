@@ -723,7 +723,16 @@ def read_once():
             antenna_count = int(settings.get("antenna_count", 4))
             all_tags = reader.read_tags()
             # Inventory応答には各タグのant番号が含まれる。設定されたアンテナ数の範囲内のみを対象とする。
-            tags = [t for t in all_tags if 1 <= t.get("ant", 0) <= antenna_count]
+            # ant は int / str / None / 欠落など様々な型で返る可能性があるため安全に変換する。
+            # 変換不可（None・非数値文字列）の場合は除外する。
+            def _safe_ant_no(tag):
+                try:
+                    return int(tag.get("ant"))
+                except (TypeError, ValueError):
+                    return None
+
+            tags = [t for t in all_tags
+                    if (a := _safe_ant_no(t)) is not None and 1 <= a <= antenna_count]
         else:
             antenna_count = int(settings.get("antenna_count", 1))
 
