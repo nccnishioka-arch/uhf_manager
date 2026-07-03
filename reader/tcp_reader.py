@@ -108,7 +108,7 @@ class TcpReader(BaseReader):
         body = self._recv_exact(data_len + 1)
         return header + body
 
-    # --- 将来実装予定（タグ読取・アンテナ・Inventory は対象外） ---
+    # --- 将来実装予定（タグ読取・アンテナ・インベントリ は対象外） ---
 
     def set_antenna(self, ant_no):
         raise NotImplementedError
