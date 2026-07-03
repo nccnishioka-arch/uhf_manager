@@ -3,10 +3,14 @@ import unittest
 from reader.connection_state import ConnectionState
 from reader.exceptions import ReaderConnectionError, ReaderProtocolError
 from reader.protocol.artfinex_protocol import (
+    build_get_antenna_command,
     build_get_tx_power_command,
+    build_set_antenna_command,
     build_set_tx_power_command,
     parse_tx_power_response,
     validate_response,
+    GET_ANTENNA_PORT_MSG_ID,
+    SET_ANTENNA_PORT_MSG_ID,
 )
 from reader.protocol.inventory import build_inventory_command
 from reader.protocol.packet import build_command
@@ -95,6 +99,33 @@ class ProtocolAndTcpReaderTests(unittest.TestCase):
         self.assertEqual(tags[0]["ant"], 1)
         self.assertEqual(tags[0]["epc"], epc_bytes.hex().upper())
         self.assertEqual(tags[0]["rssi"], -100)
+
+    def test_set_antenna_sends_command_and_returns_success(self):
+        response = build_command(SET_ANTENNA_PORT_MSG_ID, b"\x00")
+        reader = TcpReader()
+        reader._socket = FakeSocket(response)
+        reader._state = ConnectionState.CONNECTED
+
+        result = reader.set_antenna(2)
+        self.assertTrue(result)
+        self.assertEqual(reader._socket.sent, [build_set_antenna_command(2)])
+
+    def test_set_antenna_rejects_out_of_range(self):
+        reader = TcpReader()
+        with self.assertRaises(ValueError):
+            reader.set_antenna(0)
+        with self.assertRaises(ValueError):
+            reader.set_antenna(5)
+
+    def test_get_antenna_returns_antenna_number(self):
+        response = build_command(GET_ANTENNA_PORT_MSG_ID, bytes([3]))
+        reader = TcpReader()
+        reader._socket = FakeSocket(response)
+        reader._state = ConnectionState.CONNECTED
+
+        ant = reader.get_antenna()
+        self.assertEqual(ant, 3)
+        self.assertEqual(reader._socket.sent, [build_get_antenna_command()])
 
 
 if __name__ == "__main__":
