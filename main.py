@@ -848,6 +848,7 @@ def save_csv():
         writer = csv.writer(f)
         writer.writerow(["EPC", "書籍名", "RSSI", "ANT", "状態"])
 
+        # 通常は詳細キャッシュを使い、欠落時のみ表示テーブル/行マップから補完する。
         epc_by_row = {row_index: epc for epc, row_index in table_rows_by_epc.items()}
 
         for row in range(window.tableTags.rowCount()):
@@ -1024,6 +1025,7 @@ def show_settings():
                 except Exception as e:
                     log(f"接続方式切替時の切断失敗: {e}", "WARN")
             reader = ReaderManager.create(settings)
+            clear_table()
             log("接続方式変更を保存しました。再接続してください。", "WARN")
 
         update_dashboard_cards()
