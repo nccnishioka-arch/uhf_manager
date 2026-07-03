@@ -2,6 +2,12 @@
 
 
 
+## v0.13.0
+
+- `reader/reader_manager.py` : `232C(UART)` 設定値を UART として扱えるよう補正
+- `dialogs/settings_dialog.py` : 既存 UART 設定の表示互換を復旧
+- `main.py` : 接続方式変更後の Reader 再生成、LAN Inventory 読取、CSV保存、クリア時状態更新を復旧
+
 ## v0.12.9
 
 - `reader/protocol/inventory.py` を追加し、Inventory Command / Response / EPC解析 / RSSI解析 を共通化
