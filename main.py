@@ -23,7 +23,7 @@ from PySide6.QtWidgets import (
     QTableWidgetItem,
 )
 
-from reader.uhf_reader import UHFReader
+from reader.reader_manager import ReaderManager
 from widgets.table_items import make_table_item, shorten_text, status_item, set_rssi_cell
 from dialogs import settings_dialog
 
@@ -55,9 +55,9 @@ loader = QUiLoader()
 window = loader.load(ui_file)
 ui_file.close()
 
-window.setWindowTitle(f"NCC UHF Manager {APP_VERSION}")
+window.setWindowTitle(f"NCC UHF Manager v{APP_VERSION}")
 
-reader = UHFReader()
+reader = ReaderManager.create(settings)
 seen_epcs = set()
 
 timer = QTimer()
@@ -650,24 +650,16 @@ def connect_reader():
         if connection_type == "LAN":
             host = settings.get("host", "192.168.1.100")
             tcp_port = int(settings.get("tcp_port", 10001))
-
-            if reader.connect_tcp(host, tcp_port):
-                log(f"LAN接続成功 ({host}:{tcp_port})", "SUCCESS")
-            else:
-                log(f"LAN接続失敗 ({host}:{tcp_port})", "ERROR")
-                update_dashboard_cards()
-                return
-
+            target_label = f"{host}:{tcp_port}"
         else:
-            port = settings.get("port", "/dev/ttyUSB0")
-            baudrate = int(settings.get("baudrate", 115200))
+            target_label = settings.get("port", "/dev/ttyUSB0")
 
-            if reader.connect(port, baudrate):
-                log(f"USB接続成功 ({port})", "SUCCESS")
-            else:
-                log(f"USB接続失敗 ({port})", "ERROR")
-                update_dashboard_cards()
-                return
+        if reader.connect():
+            log(f"{connection_type}接続成功 ({target_label})", "SUCCESS")
+        else:
+            log(f"{connection_type}接続失敗 ({target_label})", "ERROR")
+            update_dashboard_cards()
+            return
 
         try:
             tx_power = int(settings.get("tx_power", 2400))
@@ -995,7 +987,7 @@ window.tableTags.cellDoubleClicked.connect(show_tag_detail)
 if hasattr(window, "buttonRanking"):
     window.buttonRanking.clicked.connect(show_ranking)
 
-log(f"NCC UHF Manager {APP_VERSION} 起動")
+log(f"NCC UHF Manager v{APP_VERSION} 起動")
 
 if hasattr(window, "labelStatus"):
     window.labelStatus.setText("接続状態: 未接続")
