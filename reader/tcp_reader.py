@@ -39,7 +39,7 @@ class TcpReader(BaseReader):
         if self._socket is not None:
             try:
                 self._socket.close()
-            except Exception:
+            except OSError:
                 pass
             self._socket = None
         self._state = ConnectionState.DISCONNECTED

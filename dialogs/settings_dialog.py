@@ -132,14 +132,9 @@ def show_settings(parent_window, reader, settings, timer, log_func):
         # LAN設定バリデーション
         if connection_type == "LAN":
             host_val = dialog.lineHost.text().strip()
-            port_val = dialog.spinTcpPort.value()
 
             if not host_val:
                 QMessageBox.warning(dialog, "入力エラー", "IPアドレスを入力してください。")
-                return
-
-            if not (1 <= port_val <= 65535):
-                QMessageBox.warning(dialog, "入力エラー", "ポート番号は 1〜65535 の範囲で入力してください。")
                 return
 
         settings["connection_type"] = connection_type
