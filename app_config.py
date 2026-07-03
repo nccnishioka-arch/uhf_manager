@@ -1,6 +1,6 @@
 from pathlib import Path
 
-APP_VERSION = "0.12.6"
+APP_VERSION = "0.12.7"
 
 DB_PATH = "data/uhf_manager.db"
 SETTINGS_PATH = "config/settings.json"
@@ -23,4 +23,5 @@ DEFAULT_SETTINGS = {
     "connection_type": "USB",
     "host": "192.168.1.100",
     "tcp_port": 10001,
+    "connection_timeout": 5,
 }

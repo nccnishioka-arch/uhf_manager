@@ -127,7 +127,17 @@ def show_settings(parent_window, reader, settings, timer, log_func):
             dialog.labelReaderStatus.setText("ANT数　　 - / 出力: -")
 
     def save_and_close():
-        settings["connection_type"] = dialog.comboConnectionType.currentText()
+        connection_type = dialog.comboConnectionType.currentText()
+
+        # LAN設定バリデーション
+        if connection_type == "LAN":
+            host_val = dialog.lineHost.text().strip()
+
+            if not host_val:
+                QMessageBox.warning(dialog, "入力エラー", "IPアドレスを入力してください。")
+                return
+
+        settings["connection_type"] = connection_type
         settings["port"] = dialog.linePort.text().strip() or "/dev/ttyUSB0"
         settings["host"] = dialog.lineHost.text().strip() or "192.168.1.100"
         settings["tcp_port"] = int(dialog.spinTcpPort.value())
