@@ -2,6 +2,13 @@
 
 
 
+## v0.12.9
+
+- `reader/protocol/inventory.py` を追加し、Inventory Command / Response / EPC解析 / RSSI解析 を共通化
+- `reader/uhf_reader.py` : `read_tags()` を共通プロトコル関数（`parse_inventory_response`）に移行
+- `reader/tcp_reader.py` : `read_tags()` を共通プロトコル関数で実装（USB/UART/LAN 共通 API 化）
+- `reader/protocol/__init__.py` : `build_inventory_command` / `parse_inventory_response` をエクスポートに追加
+
 ## v0.12.8
 
 - `reader/protocol/` を追加し、ART Finex UHF Reader のコマンド生成・BCC・レスポンス検証を共通化
