@@ -6,7 +6,7 @@ DB_PATH = "data/uhf_manager.db"
 SETTINGS_PATH = "config/settings.json"
 
 DEFAULT_BOOKMASTER_PATH = str(
-    Path.home() / "OneDrive" / "??????" / "UHF Manager" / "bookmaster.csv"
+    Path.home() / "ドキュメント" / "bookmaster.csv"
 )
 
 DEFAULT_SETTINGS = {
