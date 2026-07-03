@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>484</width>
-    <height>693</height>
+    <height>733</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -197,7 +197,7 @@
    <property name="geometry">
     <rect>
      <x>30</x>
-     <y>560</y>
+     <y>600</y>
      <width>91</width>
      <height>18</height>
     </rect>
@@ -209,6 +209,24 @@
    </property>
    <property name="text">
     <string>電波強度</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_13">
+   <property name="geometry">
+    <rect>
+     <x>30</x>
+     <y>560</y>
+     <width>101</width>
+     <height>18</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <pointsize>11</pointsize>
+    </font>
+   </property>
+   <property name="text">
+    <string>持出判定回数</string>
    </property>
   </widget>
   <widget class="QComboBox" name="comboBaudrate">
@@ -331,14 +349,38 @@
     <number>120</number>
    </property>
    <property name="value">
-    <number>10</number>
+    <number>5</number>
+   </property>
+  </widget>
+  <widget class="QSpinBox" name="spinLostDetectionCount">
+   <property name="geometry">
+    <rect>
+     <x>150</x>
+     <y>560</y>
+     <width>131</width>
+     <height>26</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <pointsize>11</pointsize>
+    </font>
+   </property>
+   <property name="minimum">
+    <number>1</number>
+   </property>
+   <property name="maximum">
+    <number>100</number>
+   </property>
+   <property name="value">
+    <number>3</number>
    </property>
   </widget>
   <widget class="QSpinBox" name="spinTxPower">
    <property name="geometry">
     <rect>
      <x>150</x>
-     <y>560</y>
+     <y>600</y>
      <width>131</width>
      <height>26</height>
     </rect>
@@ -575,7 +617,7 @@
    <property name="geometry">
     <rect>
      <x>20</x>
-     <y>620</y>
+     <y>660</y>
      <width>421</width>
      <height>32</height>
     </rect>

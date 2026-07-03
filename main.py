@@ -36,7 +36,8 @@ from widgets.table_items import (
 from dialogs import settings_dialog
 
 settings = load_settings()
-LOST_TIMEOUT_SEC = int(settings.get("lost_timeout_sec", 10))
+LOST_TIMEOUT_SEC = int(settings.get("lost_timeout_sec", 5))
+LOST_DETECTION_COUNT = int(settings.get("lost_detection_count", 3))
 AUTO_BOOKMASTER_PATH = settings.get("bookmaster_path", "/home/ncc/ドキュメント/bookmaster.csv")
 
 tag_states = {}
@@ -595,7 +596,8 @@ def check_movements(current_epcs):
             tag_states[epc] = {
                 "present": True,
                 "last_seen": now,
-                "status_at": now
+                "status_at": now,
+                "missed_count": 0,
             }
 
             set_row_status(epc, "棚にある")
@@ -611,6 +613,7 @@ def check_movements(current_epcs):
             save_movement(epc, "RETURNED", now, duration_sec)
             tag_states[epc]["present"] = True
             tag_states[epc]["last_seen"] = now
+            tag_states[epc]["missed_count"] = 0
 
             set_row_status(epc, "返却", QColor(180, 220, 255))
             tag_states[epc]["status_at"] = now
@@ -619,6 +622,7 @@ def check_movements(current_epcs):
             continue
 
         tag_states[epc]["last_seen"] = now
+        tag_states[epc]["missed_count"] = 0
 
         status_elapsed = (now - tag_states[epc].get("status_at", now)).total_seconds()
         current_status_item = None
@@ -635,9 +639,13 @@ def check_movements(current_epcs):
 
     for epc, state in list(tag_states.items()):
         if state["present"] and epc not in current_epcs:
+            state["missed_count"] = state.get("missed_count", 0) + 1
             elapsed = (now - state["last_seen"]).total_seconds()
 
-            if elapsed >= LOST_TIMEOUT_SEC:
+            if (
+                elapsed >= LOST_TIMEOUT_SEC
+                and state["missed_count"] >= LOST_DETECTION_COUNT
+            ):
                 state["present"] = False
                 active_taken[epc] = now
 
@@ -996,7 +1004,7 @@ def show_ranking():
 
 
 def show_settings():
-    global settings, LOST_TIMEOUT_SEC, AUTO_BOOKMASTER_PATH, reader
+    global settings, LOST_TIMEOUT_SEC, LOST_DETECTION_COUNT, AUTO_BOOKMASTER_PATH, reader
 
     old_connection_type = normalize_connection_type(
         settings.get("connection_type", "USB")
@@ -1004,7 +1012,7 @@ def show_settings():
 
     result = settings_dialog.show_settings(window, reader, settings, timer, log)
     if result is not None:
-        LOST_TIMEOUT_SEC, AUTO_BOOKMASTER_PATH = result
+        LOST_TIMEOUT_SEC, LOST_DETECTION_COUNT, AUTO_BOOKMASTER_PATH = result
         new_connection_type = normalize_connection_type(
             settings.get("connection_type", "USB")
         )
