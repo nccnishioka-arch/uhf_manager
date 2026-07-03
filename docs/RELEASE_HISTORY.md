@@ -5,6 +5,14 @@
 - `reader/reader_manager.py` : `232C(UART)` 設定値を UART として扱えるよう補正
 - `dialogs/settings_dialog.py` : 既存 UART 設定の表示互換を復旧
 - `main.py` : 接続方式変更後の Reader 再生成、LAN Inventory 読取、CSV保存、クリア時状態更新を復旧
+- **実機確認復旧漏れ対応 (追加コミット)**
+  - `widgets/table_items.py` : RSSI表示が "??????" になる問題を修正 → dBm値をテキスト表示、不明時は "-"
+  - `reader/tcp_reader.py` : `set_antenna` / `get_antenna` を実装（LAN接続でのアンテナ操作を有効化）
+  - `dialogs/settings_dialog.py` : qt_material でチェックボックス・スピンボックス矢印・コンボボックスが不可視になる問題を復旧
+  - `dialogs/settings_dialog.py` : 接続テストで接続済みの場合は失敗扱いにせず「接続済み」を表示するよう修正
+  - `dialogs/settings_dialog.py` : LAN接続テスト時に同一IP/ポートへ二重接続しないよう修正
+  - `ui/settings_dialog.ui` : マスタパスに「参照...」ボタンを追加 (QFileDialog でCSVファイルを選択)
+  - `app_config.py` : `DEFAULT_BOOKMASTER_PATH` の文字化け ("??????") を修正
 
 ## v0.12.9
 

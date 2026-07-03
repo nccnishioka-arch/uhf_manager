@@ -1,6 +1,8 @@
 from PySide6.QtCore import QFile
 from PySide6.QtUiTools import QUiLoader
-from PySide6.QtWidgets import QMessageBox
+from PySide6.QtWidgets import QFileDialog, QMessageBox
+
+import os
 
 from serial.tools import list_ports
 
@@ -74,6 +76,68 @@ def show_settings(parent_window, reader, settings, timer, log_func):
     if normalize_connection_type(connection_type) == "UART":
         connection_type = "232C(UART)"
     dialog.comboConnectionType.setCurrentText(connection_type)
+
+    # Fix 3/5/6: qt_material でチェックボックス・スピンボックス矢印・コンボボックスが
+    # 不可視になる問題をダイアログ単位のスタイルシートで復旧する
+    dialog.setStyleSheet("""
+        QCheckBox::indicator {
+            width: 16px;
+            height: 16px;
+            border: 1px solid #555;
+            background: #fff;
+            border-radius: 3px;
+        }
+        QCheckBox::indicator:checked {
+            background: #1565c0;
+            border-color: #1565c0;
+            image: none;
+        }
+        QSpinBox, QDoubleSpinBox {
+            padding-right: 16px;
+        }
+        QSpinBox::up-button, QDoubleSpinBox::up-button {
+            subcontrol-origin: border;
+            subcontrol-position: top right;
+            width: 16px;
+            border: 1px solid #aaa;
+            border-bottom: none;
+            background: #f0f0f0;
+        }
+        QSpinBox::down-button, QDoubleSpinBox::down-button {
+            subcontrol-origin: border;
+            subcontrol-position: bottom right;
+            width: 16px;
+            border: 1px solid #aaa;
+            background: #f0f0f0;
+        }
+        QSpinBox::up-arrow, QDoubleSpinBox::up-arrow {
+            width: 8px;
+            height: 8px;
+            border-left: 4px solid transparent;
+            border-right: 4px solid transparent;
+            border-bottom: 6px solid #333;
+        }
+        QSpinBox::down-arrow, QDoubleSpinBox::down-arrow {
+            width: 8px;
+            height: 8px;
+            border-left: 4px solid transparent;
+            border-right: 4px solid transparent;
+            border-top: 6px solid #333;
+        }
+        QComboBox {
+            padding: 2px 6px;
+            min-height: 24px;
+        }
+        QComboBox::drop-down {
+            width: 20px;
+            border-left: 1px solid #aaa;
+        }
+        QComboBox QAbstractItemView {
+            border: 1px solid #aaa;
+            selection-background-color: #1565c0;
+            selection-color: #fff;
+        }
+    """)
     detected_port = get_preferred_serial_port()
     configured_port = settings.get("port", "/dev/ttyUSB0")
     dialog.linePort.setText(configured_port or detected_port or "/dev/ttyUSB0")
@@ -169,13 +233,57 @@ def show_settings(parent_window, reader, settings, timer, log_func):
     dialog.buttonSave.clicked.connect(save_and_close)
     dialog.buttonCancel.clicked.connect(dialog.reject)
 
+    if hasattr(dialog, "buttonBrowseBookmaster"):
+        def browse_bookmaster():
+            current = dialog.lineBookmasterPath.text().strip()
+            if current:
+                candidate = os.path.dirname(current)
+                start_dir = candidate if os.path.isdir(candidate) else str(os.path.expanduser("~"))
+            else:
+                start_dir = str(os.path.expanduser("~"))
+            path, _ = QFileDialog.getOpenFileName(
+                dialog,
+                "書籍マスタCSV選択",
+                start_dir,
+                "CSV Files (*.csv);;All Files (*)",
+            )
+            if path:
+                dialog.lineBookmasterPath.setText(path)
+
+        dialog.buttonBrowseBookmaster.clicked.connect(browse_bookmaster)
+
     def test_connection():
         connection_type = dialog.comboConnectionType.currentText()
+
+        # 既に接続中の場合は接続済みとして扱う
+        if reader.is_connected():
+            current_type = normalize_connection_type(settings.get("connection_type", "USB"))
+            ui_type = normalize_connection_type(connection_type)
+            if current_type == ui_type:
+                QMessageBox.information(
+                    dialog,
+                    "接続テスト",
+                    "接続済みです",
+                )
+                return
 
         try:
             if connection_type == "LAN":
                 host = dialog.lineHost.text().strip()
                 tcp_port = int(dialog.spinTcpPort.value())
+
+                # 既接続のLANと同一IP/ポートなら二重接続しない
+                if (
+                    reader.is_connected()
+                    and settings.get("host") == host
+                    and int(settings.get("tcp_port", 0)) == tcp_port
+                ):
+                    QMessageBox.information(
+                        dialog,
+                        "接続テスト",
+                        f"接続済みです\n{host}:{tcp_port}",
+                    )
+                    return
 
                 test_reader = UHFReader()
                 try:
