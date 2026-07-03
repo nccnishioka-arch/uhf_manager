@@ -90,6 +90,32 @@ class MainRegressionTests(unittest.TestCase):
         self.assertEqual(reader.read_calls, 1)
         self.assertEqual(movement_calls, [set()])
 
+    def test_read_once_lan_filters_tags_by_antenna_count(self):
+        # antenna_count=1 のとき ANT2/ANT3 タグはフィルタで除外され、tags が空になる
+        out_of_range_tags = [
+            {"ant": 2, "epc": "EPC2", "rssi": -55},
+            {"ant": 3, "epc": "EPC3", "rssi": -60},
+        ]
+        reader_single_ant = _FakeReader(tags_by_read=[out_of_range_tags])
+        movement_calls_single = []
+        read_once_single_ant = load_main_function(
+            "read_once",
+            {
+                "reader": reader_single_ant,
+                "settings": {"connection_type": "LAN", "antenna_count": 1},
+                "normalize_connection_type": normalize_connection_type,
+                "log": lambda *args, **kwargs: None,
+                "check_movements": lambda epcs: movement_calls_single.append(epcs),
+            },
+        )
+
+        read_once_single_ant()
+
+        # ANT2/ANT3 はフィルタで除外 → tags が空 → check_movements が空セットで呼ばれる
+        self.assertEqual(reader_single_ant.set_antenna_calls, [])
+        self.assertEqual(reader_single_ant.read_calls, 1)
+        self.assertEqual(movement_calls_single, [set()])
+
     def test_read_once_uses_antenna_reads_for_usb_and_uart(self):
         for connection_type in ("USB", "UART", "232C(UART)"):
             with self.subTest(connection_type=connection_type):

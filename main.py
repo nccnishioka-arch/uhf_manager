@@ -720,7 +720,10 @@ def read_once():
         )
 
         if connection_type == "LAN":
-            tags = reader.read_tags()
+            antenna_count = int(settings.get("antenna_count", 4))
+            all_tags = reader.read_tags()
+            # Inventory応答には各タグのant番号が含まれる。設定されたアンテナ数の範囲内のみを対象とする。
+            tags = [t for t in all_tags if 1 <= t.get("ant", 0) <= antenna_count]
         else:
             antenna_count = int(settings.get("antenna_count", 1))
 
