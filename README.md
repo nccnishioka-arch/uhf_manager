@@ -14,7 +14,7 @@ Windows / Raspberry Pi 対応 UHF RFID 管理アプリケーション
 
 \- RS232C(UART)
 
-\- LAN（開発中）
+\- LAN（TCP socket 接続対応）
 
 \- SQLite
 
@@ -28,7 +28,16 @@ Windows / Raspberry Pi 対応 UHF RFID 管理アプリケーション
 
 
 
-Current Version : v0.12.6
+Current Version : v0.12.7
+
+## v0.12.7
+
+- `reader/tcp_reader.py` : LAN接続処理を実装（TCP socket による接続・切断・状態確認）
+- `reader/tcp_reader.py` : `ConnectionState` による内部状態管理を追加
+- `reader/tcp_reader.py` : 接続失敗時に `ReaderConnectionError` を送出するよう変更
+- `main.py` : `ReaderConnectionError` をインポートし、LAN接続失敗時のログを改善
+- `dialogs/settings_dialog.py` : LAN設定保存時に IP アドレスとポート番号のバリデーションを追加
+- `app_config.py` : `connection_timeout` をデフォルト設定に追加（デフォルト: 5秒）
 
 ## v0.12.6
 

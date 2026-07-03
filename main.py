@@ -24,6 +24,7 @@ from PySide6.QtWidgets import (
 )
 
 from reader.reader_manager import ReaderManager
+from reader.exceptions import ReaderConnectionError
 from widgets.table_items import make_table_item, shorten_text, status_item, set_rssi_cell
 from dialogs import settings_dialog
 
@@ -654,10 +655,15 @@ def connect_reader():
         else:
             target_label = settings.get("port", "/dev/ttyUSB0")
 
-        if reader.connect():
-            log(f"{connection_type}接続成功 ({target_label})", "SUCCESS")
-        else:
-            log(f"{connection_type}接続失敗 ({target_label})", "ERROR")
+        try:
+            if reader.connect():
+                log(f"{connection_type}接続成功 ({target_label})", "SUCCESS")
+            else:
+                log(f"{connection_type}接続失敗 ({target_label})", "ERROR")
+                update_dashboard_cards()
+                return
+        except ReaderConnectionError as e:
+            log(str(e), "ERROR")
             update_dashboard_cards()
             return
 
