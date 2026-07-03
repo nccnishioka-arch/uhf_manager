@@ -7,8 +7,6 @@ import unittest
 from pathlib import Path
 from types import SimpleNamespace
 
-from reader.reader_manager import normalize_connection_type
-
 
 MAIN_PATH = Path(__file__).resolve().parents[1] / "main.py"
 MAIN_AST = ast.parse(MAIN_PATH.read_text(encoding="utf-8"), filename=str(MAIN_PATH))
@@ -70,15 +68,14 @@ class MainRegressionTests(unittest.TestCase):
         self.addCleanup(Path(path).unlink, missing_ok=True)
         return path
 
-    def test_read_once_uses_single_read_for_lan(self):
-        reader = _FakeReader(tags_by_read=[[]])
+    def test_read_once_lan_switches_antennas(self):
+        reader = _FakeReader(tags_by_read=[[], [], [], []])
         movement_calls = []
         read_once = load_main_function(
             "read_once",
             {
                 "reader": reader,
                 "settings": {"connection_type": "LAN", "antenna_count": 4},
-                "normalize_connection_type": normalize_connection_type,
                 "log": lambda *args, **kwargs: None,
                 "check_movements": lambda epcs: movement_calls.append(epcs),
             },
@@ -86,63 +83,47 @@ class MainRegressionTests(unittest.TestCase):
 
         read_once()
 
-        self.assertEqual(reader.set_antenna_calls, [])
+        self.assertEqual(reader.set_antenna_calls, [1, 2, 3, 4])
+        self.assertEqual(reader.read_calls, 4)
+        self.assertEqual(movement_calls, [set()])
+
+    def test_read_once_lan_antenna_count_1(self):
+        reader = _FakeReader(tags_by_read=[[]])
+        movement_calls = []
+        read_once = load_main_function(
+            "read_once",
+            {
+                "reader": reader,
+                "settings": {"connection_type": "LAN", "antenna_count": 1},
+                "log": lambda *args, **kwargs: None,
+                "check_movements": lambda epcs: movement_calls.append(epcs),
+            },
+        )
+
+        read_once()
+
+        self.assertEqual(reader.set_antenna_calls, [1])
         self.assertEqual(reader.read_calls, 1)
         self.assertEqual(movement_calls, [set()])
 
-    def test_read_once_lan_filters_tags_by_antenna_count(self):
-        # antenna_count=1 のとき ANT2/ANT3 タグはフィルタで除外され、tags が空になる
-        out_of_range_tags = [
-            {"ant": 2, "epc": "EPC2", "rssi": -55},
-            {"ant": 3, "epc": "EPC3", "rssi": -60},
-        ]
-        reader_single_ant = _FakeReader(tags_by_read=[out_of_range_tags])
-        movement_calls_single = []
-        read_once_single_ant = load_main_function(
+    def test_read_once_lan_antenna_count_2(self):
+        reader = _FakeReader(tags_by_read=[[], []])
+        movement_calls = []
+        read_once = load_main_function(
             "read_once",
             {
-                "reader": reader_single_ant,
-                "settings": {"connection_type": "LAN", "antenna_count": 1},
-                "normalize_connection_type": normalize_connection_type,
-                "log": lambda *args, **kwargs: None,
-                "check_movements": lambda epcs: movement_calls_single.append(epcs),
-            },
-        )
-
-        read_once_single_ant()
-
-        # ANT2/ANT3 はフィルタで除外 → tags が空 → check_movements が空セットで呼ばれる
-        self.assertEqual(reader_single_ant.set_antenna_calls, [])
-        self.assertEqual(reader_single_ant.read_calls, 1)
-        self.assertEqual(movement_calls_single, [set()])
-
-    def test_read_once_lan_ant_type_safety(self):
-        # ant が None / 欠落 / 変換不可 / str(範囲外) の場合でも例外を送出せず除外されること
-        bad_type_tags = [
-            {"ant": None,  "epc": "EPCSN", "rssi": -60},  # None → 除外
-            {"epc": "EPCSM", "rssi": -65},                  # ant欠落 → 除外
-            {"ant": "x",   "epc": "EPCSX", "rssi": -70},  # 変換不可 → 除外
-            {"ant": "5",   "epc": "EPCS5", "rssi": -70},  # str "5" > antenna_count=2 → 除外
-        ]
-        reader_bad = _FakeReader(tags_by_read=[bad_type_tags])
-        movement_calls_bad = []
-        read_once_bad = load_main_function(
-            "read_once",
-            {
-                "reader": reader_bad,
+                "reader": reader,
                 "settings": {"connection_type": "LAN", "antenna_count": 2},
-                "normalize_connection_type": normalize_connection_type,
                 "log": lambda *args, **kwargs: None,
-                "check_movements": lambda epcs: movement_calls_bad.append(epcs),
+                "check_movements": lambda epcs: movement_calls.append(epcs),
             },
         )
 
-        read_once_bad()
+        read_once()
 
-        # 全タグが除外 → tags が空 → check_movements が空セットで呼ばれる
-        self.assertEqual(reader_bad.set_antenna_calls, [])
-        self.assertEqual(reader_bad.read_calls, 1)
-        self.assertEqual(movement_calls_bad, [set()])
+        self.assertEqual(reader.set_antenna_calls, [1, 2])
+        self.assertEqual(reader.read_calls, 2)
+        self.assertEqual(movement_calls, [set()])
 
     def test_read_once_uses_antenna_reads_for_usb_and_uart(self):
         for connection_type in ("USB", "UART", "232C(UART)"):
@@ -157,7 +138,6 @@ class MainRegressionTests(unittest.TestCase):
                             "connection_type": connection_type,
                             "antenna_count": 3,
                         },
-                        "normalize_connection_type": normalize_connection_type,
                         "log": lambda *args, **kwargs: None,
                         "check_movements": lambda epcs: movement_calls.append(epcs),
                     },

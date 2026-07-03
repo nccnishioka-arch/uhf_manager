@@ -5,8 +5,12 @@ from reader.connection_state import ConnectionState
 from reader.exceptions import ReaderConnectionError, ReaderProtocolError
 from reader.protocol import HEADER_SIZE, get_data_length
 from reader.protocol.artfinex_protocol import (
+    build_get_antenna_command,
     build_get_tx_power_command,
+    build_set_antenna_command,
     build_set_tx_power_command,
+    parse_get_antenna_response,
+    parse_set_antenna_response,
     parse_set_tx_power_response,
     parse_tx_power_response,
 )
@@ -109,13 +113,17 @@ class TcpReader(BaseReader):
         body = self._recv_exact(data_len + 1)
         return header + body
 
-    # --- 将来実装予定（アンテナ切替は対象外） ---
+    # --- アンテナ操作 (UXA250-4 / CBファミリARモデル: 88h/89h) ---
 
     def set_antenna(self, ant_no):
-        raise NotImplementedError
+        self._send(build_set_antenna_command(ant_no))
+        response = self._read_response()
+        return parse_set_antenna_response(response)
 
     def get_antenna(self):
-        raise NotImplementedError
+        self._send(build_get_antenna_command())
+        response = self._read_response()
+        return parse_get_antenna_response(response)
 
     def set_tx_power(self, power):
         self._send(build_set_tx_power_command(power))

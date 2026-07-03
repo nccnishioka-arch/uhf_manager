@@ -715,38 +715,19 @@ def read_once():
             return
 
         tags = []
-        connection_type = normalize_connection_type(
-            settings.get("connection_type", "USB")
-        )
+        antenna_count = int(settings.get("antenna_count", 1))
 
-        if connection_type == "LAN":
-            antenna_count = int(settings.get("antenna_count", 4))
-            all_tags = reader.read_tags()
-            # Inventory応答には各タグのant番号が含まれる。設定されたアンテナ数の範囲内のみを対象とする。
-            # ant は int / str / None / 欠落など様々な型で返る可能性があるため安全に変換する。
-            # 変換不可（None・非数値文字列）の場合は除外する。
-            def _safe_ant_no(tag):
-                try:
-                    return int(tag.get("ant"))
-                except (TypeError, ValueError):
-                    return None
+        for ant_no in range(1, antenna_count + 1):
+            try:
+                reader.set_antenna(ant_no)
+                ant_tags = reader.read_tags()
 
-            tags = [t for t in all_tags
-                    if (a := _safe_ant_no(t)) is not None and 1 <= a <= antenna_count]
-        else:
-            antenna_count = int(settings.get("antenna_count", 1))
+                for tag in ant_tags:
+                    tag["ant"] = ant_no
 
-            for ant_no in range(1, antenna_count + 1):
-                try:
-                    reader.set_antenna(ant_no)
-                    ant_tags = reader.read_tags()
-
-                    for tag in ant_tags:
-                        tag["ant"] = ant_no
-
-                    tags.extend(ant_tags)
-                except Exception as e:
-                    log(f"ANT{ant_no} 読取失敗: {e}")
+                tags.extend(ant_tags)
+            except Exception as e:
+                log(f"ANT{ant_no} 読取失敗: {e}")
 
         current_epcs = set()
 
