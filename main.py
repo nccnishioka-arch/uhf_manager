@@ -1016,8 +1016,8 @@ def show_settings():
             if reader.is_connected():
                 try:
                     reader.disconnect()
-                except Exception:
-                    pass
+                except Exception as e:
+                    log(f"接続方式切替時の切断失敗: {e}", "WARN")
             reader = ReaderManager.create(settings)
             log("接続方式変更を保存しました。再接続してください。", "WARN")
 
