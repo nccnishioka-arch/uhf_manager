@@ -2,6 +2,12 @@
 
 
 
+## v0.12.7
+
+- `CONTRIBUTING.md` を追加（Git 運用・バージョン管理・開発方針を明文化）
+- `docs/adr/ADR-001-settings-dialog.md` を追加
+- `docs/adr/ADR-002-reader-abstraction.md` を追加
+
 ## v0.12.6
 
 - `reader/` 配下に Reader 抽象化基盤を追加
