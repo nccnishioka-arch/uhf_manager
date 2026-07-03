@@ -662,7 +662,7 @@ class MainRegressionTests(unittest.TestCase):
         self.assertEqual(window.labelReaderDetectCount.text(), "7冊")
         self.assertEqual(window.labelReaderConnectionStatus.text(), "● 接続中")
 
-    def test_app_config_uses_v0134_checkout_defaults(self):
+    def test_app_config_uses_v0_13_4_checkout_defaults(self):
         self.assertEqual(APP_VERSION, "0.13.4")
         self.assertEqual(DEFAULT_SETTINGS["lost_timeout_sec"], 5)
         self.assertEqual(DEFAULT_SETTINGS["lost_detection_count"], 3)

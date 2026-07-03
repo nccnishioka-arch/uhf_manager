@@ -421,7 +421,10 @@ def update_dashboard_cards():
     else:
         target = settings.get("port", "-")
 
-    antenna_count = int(settings.get("antenna_count", 1))
+    try:
+        antenna_count = int(settings.get("antenna_count", 1))
+    except (TypeError, ValueError):
+        antenna_count = 1
 
     values = {
         "labelReaderModel": reader_model,
@@ -725,7 +728,10 @@ def read_once():
             return
 
         tags = []
-        antenna_count = int(settings.get("antenna_count", 1))
+        try:
+            antenna_count = int(settings.get("antenna_count", 1))
+        except (TypeError, ValueError):
+            antenna_count = 1
 
         for ant_no in range(1, antenna_count + 1):
             try:
