@@ -1,5 +1,20 @@
 # NCC UHF Manager Release History
 
+## v0.13.2
+
+- `reader/protocol/artfinex_protocol.py` : アンテナ設定 88h / アンテナ取得 89h コマンドを追加 (UXA250-4 / CBファミリARモデル LAN対応)
+  - `build_set_antenna_command(ant_no)` / `build_get_antenna_command()` を追加
+  - `parse_set_antenna_response()` / `parse_get_antenna_response()` を追加
+- `reader/protocol/__init__.py` : 新規アンテナ関数をエクスポートに追加
+- `reader/tcp_reader.py` : `set_antenna()` / `get_antenna()` を実装 (88h/89h プロトコルを使用)
+  - 従来の `NotImplementedError` を解消
+- `main.py` : LAN接続時のアンテナ読取を「ソフトウェアフィルタ方式」から「実アンテナ切替方式」に変更
+  - `antenna_count` 設定に応じて ANT1〜ANT4 を順番に切替えながら読取
+  - ANT列には実際に切替えたアンテナ番号を表示
+  - USB / UART と同一ループを使用 (USB / UART の既存動作は変更なし)
+- `tests/test_protocol_tcp_reader.py` : `set_antenna` / `get_antenna` のテストを追加
+- `tests/test_main_regressions.py` : LAN接続のテストを実アンテナ切替動作に合わせて更新
+
 ## v0.13.1
 
 - `main.py` : LAN接続時も `antenna_count` 設定に応じて ANT1〜ANT4 のタグをフィルタリング
