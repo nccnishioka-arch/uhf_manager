@@ -1,13 +1,27 @@
-## v0.12.3
-- ?????????? `dialogs/detail_dialog.py` ???
-- `main.py` ???????
-- APP_VERSION ? v0.12.3 ???
-
-\# NCC UHF Manager Release History
+# NCC UHF Manager Release History
 
 
 
-\## v0.12.4
+## v0.12.6
+
+- `reader/` 配下に Reader 抽象化基盤を追加
+- `reader/connection_state.py` : 通信状態 Enum を追加
+- `reader/exceptions.py` : Reader 共通例外クラスを追加
+- `reader/base_reader.py` : Reader 共通基底クラス `BaseReader` を追加
+- `reader/usb_reader.py` : USB接続用 `UsbReader` を追加（`UHFReader` をラップ）
+- `reader/uart_reader.py` : UART接続用 `UartReader` を追加
+- `reader/tcp_reader.py` : LAN/TCP接続用 `TcpReader` を追加
+- `reader/reader_manager.py` : 接続方式に応じて Reader を生成する `ReaderManager` を追加
+- `main.py` で `ReaderManager.create(settings)` を使用するよう変更
+
+## v0.12.5
+
+- `show_settings()` を `dialogs/settings_dialog.py` へ移動し、`main.py` を軽量化
+- `detect_serial_ports()` / `get_preferred_serial_port()` も `settings_dialog.py` へ移動
+- 不要になった import を `main.py` から削除（`json`, `QFrame`, `QDialog`, `QStyle`, `list_ports`, `save_settings`）
+- `dialogs/` パッケージを新規作成
+
+## v0.12.4
 
 - show_settings整理
 
