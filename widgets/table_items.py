@@ -17,21 +17,21 @@ def make_table_item(text, tooltip=None):
 
 
 def status_display(status):
-    if status == "????":
-        return "? ?"
-    if status == "??":
-        return "? ??"
-    if status == "??":
-        return "? ??"
+    if status == "棚にある":
+        return "● 棚にある"
+    if status == "持出":
+        return "● 持出"
+    if status == "返却":
+        return "● 返却"
     return status
 
 
 def status_color_info(status):
-    if status == "????":
+    if status == "棚にある":
         return "#2e7d32", "#e8f5e9"
-    if status == "??":
+    if status == "持出":
         return "#c62828", "#ffebee"
-    if status == "??":
+    if status == "返却":
         return "#ef6c00", "#fff3e0"
     return "#333333", "#ffffff"
 
