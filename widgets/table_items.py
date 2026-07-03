@@ -49,27 +49,34 @@ def rssi_level_info(rssi):
     try:
         value = int(rssi)
     except Exception:
-        value = -100
+        return None, "-", None, "#666666"
 
     if value >= -60:
-        return value, "?", 6, "#1565c0"
+        return value, "強", 3, "#1565c0"
     elif value >= -75:
-        return value, "??", 4, "#f9a825"
+        return value, "普通", 2, "#f9a825"
     else:
-        return value, "?", 2, "#c62828"
+        return value, "弱", 1, "#c62828"
 
 
 def set_rssi_cell(table, row, column, rssi):
     value, level, bars, color = rssi_level_info(rssi)
 
-    label = QLabel("?" * bars)
-    label.setToolTip(f"????: {value} dBm\\n???: {level}")
+    if value is None:
+        display_text = "-"
+        tooltip = "RSSI: 不明"
+    else:
+        display_text = str(value)
+        tooltip = f"RSSI: {value} dBm / 強度: {level}"
+
+    label = QLabel(display_text)
+    label.setToolTip(tooltip)
     label.setToolTipDuration(5000)
     label.setMouseTracking(True)
     label.setStyleSheet(f'''
         QLabel {{
             color: {color};
-            font-size: 15px;
+            font-size: 13px;
             font-weight: 800;
             padding-left: 6px;
         }}

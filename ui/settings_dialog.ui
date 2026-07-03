@@ -429,7 +429,7 @@
     <rect>
      <x>150</x>
      <y>440</y>
-     <width>301</width>
+     <width>231</width>
      <height>25</height>
     </rect>
    </property>
@@ -437,6 +437,24 @@
     <font>
      <pointsize>11</pointsize>
     </font>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="buttonBrowseBookmaster">
+   <property name="geometry">
+    <rect>
+     <x>387</x>
+     <y>440</y>
+     <width>63</width>
+     <height>25</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <pointsize>10</pointsize>
+    </font>
+   </property>
+   <property name="text">
+    <string>参照...</string>
    </property>
   </widget>
   <widget class="QLabel" name="label_10">
