@@ -4,8 +4,11 @@ import csv
 import os
 import tempfile
 import unittest
+from datetime import datetime, timedelta
 from pathlib import Path
 from types import SimpleNamespace
+
+from app_config import APP_VERSION, DEFAULT_SETTINGS
 
 
 MAIN_PATH = Path(__file__).resolve().parents[1] / "main.py"
@@ -224,6 +227,139 @@ class MainRegressionTests(unittest.TestCase):
             rows = list(csv.reader(f))
 
         self.assertEqual(rows[1], ["E200FALLBACK", "表示タイトル", "", "4", "返却"])
+
+    def test_check_movements_does_not_mark_taken_by_time_alone(self):
+        current_now = datetime(2026, 7, 3, 12, 0, 0)
+
+        class _FakeDateTime:
+            @staticmethod
+            def now():
+                return current_now
+
+        save_calls = []
+        status_calls = []
+        tag_states = {
+            "E200TIME": {
+                "present": True,
+                "last_seen": current_now - timedelta(seconds=6),
+                "status_at": current_now - timedelta(seconds=6),
+                "missed_count": 1,
+            }
+        }
+        active_taken = {}
+        check_movements = load_main_function(
+            "check_movements",
+            {
+                "datetime": _FakeDateTime,
+                "tag_states": tag_states,
+                "active_taken": active_taken,
+                "LOST_TIMEOUT_SEC": 5,
+                "LOST_DETECTION_COUNT": 3,
+                "save_movement": lambda *args: save_calls.append(args),
+                "set_row_status": lambda *args: status_calls.append(args),
+                "log": lambda *args, **kwargs: None,
+                "get_book_title": lambda epc: epc,
+                "QColor": lambda *args: args,
+            },
+        )
+
+        check_movements(set())
+
+        self.assertTrue(tag_states["E200TIME"]["present"])
+        self.assertEqual(tag_states["E200TIME"]["missed_count"], 2)
+        self.assertEqual(active_taken, {})
+        self.assertEqual(save_calls, [])
+        self.assertEqual(status_calls, [])
+
+    def test_check_movements_marks_taken_after_time_and_consecutive_misses(self):
+        current_now = datetime(2026, 7, 3, 12, 0, 0)
+
+        class _FakeDateTime:
+            @staticmethod
+            def now():
+                return current_now
+
+        save_calls = []
+        status_calls = []
+        logs = []
+        tag_states = {
+            "E200TAKEN": {
+                "present": True,
+                "last_seen": current_now - timedelta(seconds=6),
+                "status_at": current_now - timedelta(seconds=6),
+                "missed_count": 2,
+            }
+        }
+        active_taken = {}
+        check_movements = load_main_function(
+            "check_movements",
+            {
+                "datetime": _FakeDateTime,
+                "tag_states": tag_states,
+                "active_taken": active_taken,
+                "LOST_TIMEOUT_SEC": 5,
+                "LOST_DETECTION_COUNT": 3,
+                "save_movement": lambda *args: save_calls.append(args),
+                "set_row_status": lambda *args: status_calls.append(args),
+                "log": lambda message, *args, **kwargs: logs.append(message),
+                "get_book_title": lambda epc: "テスト書籍",
+                "QColor": lambda *args: args,
+            },
+        )
+
+        check_movements(set())
+
+        self.assertFalse(tag_states["E200TAKEN"]["present"])
+        self.assertEqual(tag_states["E200TAKEN"]["missed_count"], 3)
+        self.assertEqual(active_taken, {"E200TAKEN": current_now})
+        self.assertEqual(save_calls, [("E200TAKEN", "TAKEN", current_now)])
+        self.assertEqual(status_calls, [("E200TAKEN", "持出", (255, 190, 190))])
+        self.assertEqual(logs, ["持出検知: テスト書籍 / E200TAKEN"])
+
+    def test_check_movements_resets_missed_count_when_tag_is_seen_again(self):
+        current_now = datetime(2026, 7, 3, 12, 0, 0)
+
+        class _FakeDateTime:
+            @staticmethod
+            def now():
+                return current_now
+
+        tag_states = {
+            "E200RESET": {
+                "present": True,
+                "last_seen": current_now - timedelta(seconds=6),
+                "status_at": current_now - timedelta(seconds=6),
+                "missed_count": 2,
+            }
+        }
+        check_movements = load_main_function(
+            "check_movements",
+            {
+                "datetime": _FakeDateTime,
+                "tag_states": tag_states,
+                "active_taken": {},
+                "LOST_TIMEOUT_SEC": 5,
+                "LOST_DETECTION_COUNT": 3,
+                "save_movement": lambda *args: None,
+                "set_row_status": lambda *args: None,
+                "log": lambda *args, **kwargs: None,
+                "get_book_title": lambda epc: epc,
+                "QColor": lambda *args: args,
+                "table_rows_by_epc": {},
+                "window": SimpleNamespace(tableTags=SimpleNamespace(item=lambda *args: None)),
+            },
+        )
+
+        check_movements({"E200RESET"})
+
+        self.assertTrue(tag_states["E200RESET"]["present"])
+        self.assertEqual(tag_states["E200RESET"]["last_seen"], current_now)
+        self.assertEqual(tag_states["E200RESET"]["missed_count"], 0)
+
+    def test_app_config_uses_v0133_checkout_defaults(self):
+        self.assertEqual(APP_VERSION, "0.13.3")
+        self.assertEqual(DEFAULT_SETTINGS["lost_timeout_sec"], 5)
+        self.assertEqual(DEFAULT_SETTINGS["lost_detection_count"], 3)
 
 
 if __name__ == "__main__":
