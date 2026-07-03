@@ -1,6 +1,7 @@
 import ast
 import copy
 import csv
+import os
 import tempfile
 import unittest
 from pathlib import Path
@@ -63,6 +64,12 @@ class _FakeTable:
 
 
 class MainRegressionTests(unittest.TestCase):
+    def make_temp_csv_path(self):
+        fd, path = tempfile.mkstemp(suffix=".csv")
+        os.close(fd)
+        self.addCleanup(Path(path).unlink, missing_ok=True)
+        return path
+
     def test_read_once_uses_single_read_for_lan(self):
         reader = _FakeReader(tags_by_read=[[]])
         movement_calls = []
@@ -109,8 +116,7 @@ class MainRegressionTests(unittest.TestCase):
                 self.assertEqual(movement_calls, [set()])
 
     def test_save_csv_uses_cached_details_when_available(self):
-        with tempfile.NamedTemporaryFile(suffix=".csv", delete=False) as tmp:
-            path = tmp.name
+        path = self.make_temp_csv_path()
 
         table = _FakeTable(
             [
@@ -144,20 +150,16 @@ class MainRegressionTests(unittest.TestCase):
             },
         )
 
-        try:
-            save_csv()
+        save_csv()
 
-            with open(path, newline="", encoding="utf-8-sig") as f:
-                rows = list(csv.reader(f))
-        finally:
-            Path(path).unlink(missing_ok=True)
+        with open(path, newline="", encoding="utf-8-sig") as f:
+            rows = list(csv.reader(f))
 
         self.assertEqual(rows[1], ["E200CACHE", "キャッシュタイトル", "-55", "2", "棚にある"])
         self.assertEqual(log_messages, [f"CSV保存: {path}"])
 
     def test_save_csv_falls_back_to_table_values_when_cache_missing(self):
-        with tempfile.NamedTemporaryFile(suffix=".csv", delete=False) as tmp:
-            path = tmp.name
+        path = self.make_temp_csv_path()
 
         table = _FakeTable(
             [
@@ -182,13 +184,10 @@ class MainRegressionTests(unittest.TestCase):
             },
         )
 
-        try:
-            save_csv()
+        save_csv()
 
-            with open(path, newline="", encoding="utf-8-sig") as f:
-                rows = list(csv.reader(f))
-        finally:
-            Path(path).unlink(missing_ok=True)
+        with open(path, newline="", encoding="utf-8-sig") as f:
+            rows = list(csv.reader(f))
 
         self.assertEqual(rows[1], ["E200FALLBACK", "表示タイトル", "", "4", "返却"])
 
