@@ -46,28 +46,39 @@ def status_item(status):
 
 
 def rssi_level_info(rssi):
+    """Return (value, label, bars, color, emoji) for a given RSSI value.
+
+    Levels:
+        >= -60  良好   🟢  3 bars
+        >= -70  普通   🟡  2 bars
+        >= -80  やや弱 🟠  1 bar
+        < -80   弱     🔴  1 bar
+    """
     try:
         value = int(rssi)
     except Exception:
-        return None, "-", None, "#666666"
+        return None, "-", 0, "#666666", ""
 
     if value >= -60:
-        return value, "強", 3, "#1565c0"
-    elif value >= -75:
-        return value, "普通", 2, "#f9a825"
+        return value, "良好", 3, "#2e7d32", "🟢"
+    elif value >= -70:
+        return value, "普通", 2, "#f9a825", "🟡"
+    elif value >= -80:
+        return value, "やや弱", 1, "#e65100", "🟠"
     else:
-        return value, "弱", 1, "#c62828"
+        return value, "弱", 1, "#c62828", "🔴"
 
 
 def set_rssi_cell(table, row, column, rssi):
-    value, level, bars, color = rssi_level_info(rssi)
+    value, level, bars, color, emoji = rssi_level_info(rssi)
 
     if value is None:
         display_text = "-"
         tooltip = "RSSI: 不明"
     else:
-        display_text = str(value)
-        tooltip = f"RSSI: {value} dBm / 強度: {level}"
+        bar_str = "■" * bars
+        display_text = f"{emoji}{bar_str}  {value}"
+        tooltip = f"RSSI: {value} dBm\n判定: {level}"
 
     label = QLabel(display_text)
     label.setToolTip(tooltip)
