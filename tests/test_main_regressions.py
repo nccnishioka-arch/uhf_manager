@@ -90,6 +90,60 @@ class MainRegressionTests(unittest.TestCase):
         self.assertEqual(reader.read_calls, 1)
         self.assertEqual(movement_calls, [set()])
 
+    def test_read_once_lan_filters_tags_by_antenna_count(self):
+        # antenna_count=1 のとき ANT2/ANT3 タグはフィルタで除外され、tags が空になる
+        out_of_range_tags = [
+            {"ant": 2, "epc": "EPC2", "rssi": -55},
+            {"ant": 3, "epc": "EPC3", "rssi": -60},
+        ]
+        reader_single_ant = _FakeReader(tags_by_read=[out_of_range_tags])
+        movement_calls_single = []
+        read_once_single_ant = load_main_function(
+            "read_once",
+            {
+                "reader": reader_single_ant,
+                "settings": {"connection_type": "LAN", "antenna_count": 1},
+                "normalize_connection_type": normalize_connection_type,
+                "log": lambda *args, **kwargs: None,
+                "check_movements": lambda epcs: movement_calls_single.append(epcs),
+            },
+        )
+
+        read_once_single_ant()
+
+        # ANT2/ANT3 はフィルタで除外 → tags が空 → check_movements が空セットで呼ばれる
+        self.assertEqual(reader_single_ant.set_antenna_calls, [])
+        self.assertEqual(reader_single_ant.read_calls, 1)
+        self.assertEqual(movement_calls_single, [set()])
+
+    def test_read_once_lan_ant_type_safety(self):
+        # ant が None / 欠落 / 変換不可 / str(範囲外) の場合でも例外を送出せず除外されること
+        bad_type_tags = [
+            {"ant": None,  "epc": "EPCSN", "rssi": -60},  # None → 除外
+            {"epc": "EPCSM", "rssi": -65},                  # ant欠落 → 除外
+            {"ant": "x",   "epc": "EPCSX", "rssi": -70},  # 変換不可 → 除外
+            {"ant": "5",   "epc": "EPCS5", "rssi": -70},  # str "5" > antenna_count=2 → 除外
+        ]
+        reader_bad = _FakeReader(tags_by_read=[bad_type_tags])
+        movement_calls_bad = []
+        read_once_bad = load_main_function(
+            "read_once",
+            {
+                "reader": reader_bad,
+                "settings": {"connection_type": "LAN", "antenna_count": 2},
+                "normalize_connection_type": normalize_connection_type,
+                "log": lambda *args, **kwargs: None,
+                "check_movements": lambda epcs: movement_calls_bad.append(epcs),
+            },
+        )
+
+        read_once_bad()
+
+        # 全タグが除外 → tags が空 → check_movements が空セットで呼ばれる
+        self.assertEqual(reader_bad.set_antenna_calls, [])
+        self.assertEqual(reader_bad.read_calls, 1)
+        self.assertEqual(movement_calls_bad, [set()])
+
     def test_read_once_uses_antenna_reads_for_usb_and_uart(self):
         for connection_type in ("USB", "UART", "232C(UART)"):
             with self.subTest(connection_type=connection_type):
