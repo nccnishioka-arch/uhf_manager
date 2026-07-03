@@ -1,4 +1,23 @@
 import unittest
+import sys
+import types
+
+qtgui = types.ModuleType("PySide6.QtGui")
+qtwidgets = types.ModuleType("PySide6.QtWidgets")
+
+
+class _Dummy:
+    def __init__(self, *args, **kwargs):
+        pass
+
+
+qtgui.QColor = _Dummy
+qtwidgets.QLabel = _Dummy
+qtwidgets.QTableWidgetItem = _Dummy
+
+sys.modules.setdefault("PySide6", types.ModuleType("PySide6"))
+sys.modules["PySide6.QtGui"] = qtgui
+sys.modules["PySide6.QtWidgets"] = qtwidgets
 
 from widgets.table_items import status_color_info, status_display
 
