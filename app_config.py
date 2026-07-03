@@ -1,6 +1,6 @@
 from pathlib import Path
 
-APP_VERSION = "0.13.2"
+APP_VERSION = "0.13.3"
 
 DB_PATH = "data/uhf_manager.db"
 SETTINGS_PATH = "config/settings.json"
@@ -18,7 +18,8 @@ DEFAULT_SETTINGS = {
     "auto_start_reading": True,
     "bookmaster_path": DEFAULT_BOOKMASTER_PATH,
     "read_interval_ms": 500,
-    "lost_timeout_sec": 10,
+    "lost_timeout_sec": 5,
+    "lost_detection_count": 3,
     "tx_power": 2400,
     "connection_type": "USB",
     "host": "192.168.1.100",

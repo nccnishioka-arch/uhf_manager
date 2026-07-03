@@ -62,7 +62,8 @@ def show_settings(parent_window, reader, settings, timer, log_func):
     """
     設定ダイアログを表示する。
     保存時は settings dict を直接更新し、timer のインターバルも更新する。
-    保存された場合は (lost_timeout_sec, auto_bookmaster_path) を返す。
+    保存された場合は
+    (lost_timeout_sec, lost_detection_count, auto_bookmaster_path) を返す。
     キャンセルされた場合は None を返す。
     """
     ui_file = QFile("ui/settings_dialog.ui")
@@ -150,7 +151,8 @@ def show_settings(parent_window, reader, settings, timer, log_func):
     dialog.checkAutoStartReading.setChecked(bool(settings.get("auto_start_reading", True)))
     dialog.lineBookmasterPath.setText(settings.get("bookmaster_path", "/home/ncc/ドキュメント/bookmaster.csv"))
     dialog.spinReadInterval.setValue(int(settings.get("read_interval_ms", 500)))
-    dialog.spinLostTimeout.setValue(int(settings.get("lost_timeout_sec", 10)))
+    dialog.spinLostTimeout.setValue(int(settings.get("lost_timeout_sec", 5)))
+    dialog.spinLostDetectionCount.setValue(int(settings.get("lost_detection_count", 3)))
     dialog.spinTxPower.setValue(int(settings.get("tx_power", 2400)))
 
     def update_connection_fields():
@@ -221,6 +223,7 @@ def show_settings(parent_window, reader, settings, timer, log_func):
         settings["bookmaster_path"] = dialog.lineBookmasterPath.text().strip()
         settings["read_interval_ms"] = int(dialog.spinReadInterval.value())
         settings["lost_timeout_sec"] = int(dialog.spinLostTimeout.value())
+        settings["lost_detection_count"] = int(dialog.spinLostDetectionCount.value())
         settings["tx_power"] = int(dialog.spinTxPower.value())
 
         save_settings(settings)
@@ -344,7 +347,8 @@ def show_settings(parent_window, reader, settings, timer, log_func):
 
     if accepted:
         return (
-            int(settings.get("lost_timeout_sec", 10)),
+            int(settings.get("lost_timeout_sec", 5)),
+            int(settings.get("lost_detection_count", 3)),
             settings.get("bookmaster_path", "/home/ncc/ドキュメント/bookmaster.csv"),
         )
 

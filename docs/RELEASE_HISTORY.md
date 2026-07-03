@@ -1,5 +1,15 @@
 # NCC UHF Manager Release History
 
+## v0.13.3
+
+- `main.py` : 持出判定を「未読秒数」だけで即判定せず、連続未検出回数も満たした場合のみ持出に変更
+  - `missed_count` をタグ単位・読取サイクル単位で保持し、再検出時は未読回数をリセット
+  - `lost_timeout_sec` と新規 `lost_detection_count` の両条件成立時のみ `持出` を記録
+  - `持出` 済みタグの再検出時は従来どおり `返却` 表示へ戻し、継続読取時は `棚にある` へ復帰
+- `app_config.py` : `lost_timeout_sec` の初期値を 5 秒へ変更し、`lost_detection_count` 初期値 3 回を追加
+- `dialogs/settings_dialog.py` / `ui/settings_dialog.ui` / `services/settings_service.py` : `持出判定回数` 設定の保存・再読込に対応
+- `tests/test_main_regressions.py` : 持出判定安定化・再検出復帰・設定保存の回帰テストを追加
+
 ## v0.13.2
 
 - `reader/protocol/artfinex_protocol.py` : アンテナ設定 88h / アンテナ取得 89h コマンドを追加 (UXA250-4 / CBファミリARモデル LAN対応)
