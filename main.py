@@ -675,6 +675,12 @@ def connect_reader():
                 log(f"電波強度確認: {current_tx_power}")
             else:
                 log(f"電波強度設定失敗: {tx_power}", "WARN")
+        except NotImplementedError as e:
+            connection_type_label = settings.get("connection_type", "USB")
+            log(
+                f"{connection_type_label}接続では電波強度設定が未対応です: {e}",
+                "ERROR",
+            )
         except Exception as e:
             log(f"電波強度設定エラー: {e}", "ERROR")
 
