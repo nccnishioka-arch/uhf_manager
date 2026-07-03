@@ -65,6 +65,44 @@ class _FakeTable:
         return self._rows[row].get(column)
 
 
+class _FakeEditableTable:
+    def __init__(self):
+        self._rows = []
+        self._cell_widgets = {}
+
+    def rowCount(self):
+        return len(self._rows)
+
+    def insertRow(self, row):
+        if row != len(self._rows):
+            raise AssertionError(f"Unexpected insertRow index: {row}")
+        self._rows.append({})
+
+    def setItem(self, row, column, item):
+        self._rows[row][column] = item
+
+    def setCellWidget(self, row, column, widget):
+        self._cell_widgets[(row, column)] = widget
+
+    def item(self, row, column):
+        return self._rows[row].get(column)
+
+
+class _FakeLabel:
+    def __init__(self):
+        self.value = None
+        self.style = None
+
+    def setText(self, value):
+        self.value = value
+
+    def text(self):
+        return self.value
+
+    def setStyleSheet(self, style):
+        self.style = style
+
+
 class _FakeStatusTable:
     def __init__(self, row_to_epc, status_by_epc):
         self._row_to_epc = row_to_epc
@@ -507,8 +545,125 @@ class MainRegressionTests(unittest.TestCase):
         self.assertEqual(reloaded["lost_detection_count"], 7)
         self.assertEqual(reloaded["lost_timeout_sec"], DEFAULT_SETTINGS["lost_timeout_sec"])
 
-    def test_app_config_uses_v0133_checkout_defaults(self):
-        self.assertEqual(APP_VERSION, "0.13.3")
+    def test_read_once_deduplicates_epc_and_counts_unique_tags(self):
+        reader = _FakeReader(
+            tags_by_read=[
+                [{"epc": "E200DUP", "rssi": -70}],
+                [{"epc": "E200DUP", "rssi": -60}],
+                [{"epc": "E200UNIQ", "rssi": -80}],
+            ]
+        )
+        movement_calls = []
+        save_calls = []
+        table = _FakeEditableTable()
+        table_rows_by_epc = {}
+        table_details_by_row = {}
+        globals_dict = {
+            "reader": reader,
+            "settings": {"connection_type": "LAN", "antenna_count": 3},
+            "seen_epcs": set(),
+            "table_rows_by_epc": table_rows_by_epc,
+            "table_details_by_row": table_details_by_row,
+            "window": SimpleNamespace(tableTags=table),
+            "QTableWidgetItem": _FakeTableItem,
+            "make_table_item": lambda text, tooltip=None: _FakeTableItem(text),
+            "shorten_text": lambda text, max_len=42: text,
+            "set_rssi_cell": lambda table_obj, row, column, rssi: table_obj.setItem(
+                row, column, _FakeTableItem(str(rssi))
+            ),
+            "set_status_cell": lambda row, column, status: table.setItem(
+                row, column, _FakeTableItem(status)
+            ),
+            "set_row_detail": lambda row, epc, title, rssi, ant, status: table_details_by_row.update(
+                {
+                    row: {
+                        "epc": epc,
+                        "title": title,
+                        "rssi": rssi,
+                        "ant": ant,
+                        "status": status,
+                    }
+                }
+            ),
+            "get_book_title": lambda epc: f"title:{epc}",
+            "save_book_event": lambda epc, rssi, ant: save_calls.append((epc, rssi, ant)),
+            "check_movements": lambda epcs: movement_calls.append(epcs),
+            "update_dashboard_cards": lambda: None,
+            "log": lambda *args, **kwargs: None,
+            "latest_read_title": "-",
+            "latest_read_epc": "-",
+            "latest_detect_count": 0,
+        }
+        read_once = load_main_function("read_once", globals_dict)
+
+        read_once()
+
+        self.assertEqual(table.rowCount(), 2)
+        self.assertEqual(set(table_rows_by_epc.keys()), {"E200DUP", "E200UNIQ"})
+        self.assertEqual(movement_calls, [{"E200DUP", "E200UNIQ"}])
+        self.assertEqual(globals_dict["latest_detect_count"], 2)
+        self.assertEqual(len(save_calls), 2)
+        self.assertEqual(
+            sorted(epc for epc, _, _ in save_calls),
+            ["E200DUP", "E200UNIQ"],
+        )
+
+        dup_row = table_rows_by_epc["E200DUP"]
+        self.assertEqual(table.item(dup_row, 1).text(), "-60")
+        self.assertEqual(table.item(dup_row, 2).text(), "2")
+        self.assertEqual(table_details_by_row[dup_row]["ant"], 2)
+        self.assertEqual(table_details_by_row[dup_row]["rssi"], -60)
+
+    def test_update_dashboard_cards_shows_configured_antenna_count(self):
+        labels = {
+            "labelReaderModel": _FakeLabel(),
+            "labelReaderConnectionType": _FakeLabel(),
+            "labelReaderTarget": _FakeLabel(),
+            "labelReaderAntenna": _FakeLabel(),
+            "labelReaderTxPower": _FakeLabel(),
+            "labelReaderDetectCount": _FakeLabel(),
+            "labelReaderConnectionStatus": _FakeLabel(),
+            "labelLatestBookCard": _FakeLabel(),
+            "labelLatestEpcCard": _FakeLabel(),
+            "labelReaderModelTitle": _FakeLabel(),
+            "labelReaderStatusTitle": _FakeLabel(),
+            "labelReaderConnectionTypeTitle": _FakeLabel(),
+            "labelReaderTargetTitle": _FakeLabel(),
+            "labelReaderAntennaTitle": _FakeLabel(),
+            "labelReaderTxPowerTitle": _FakeLabel(),
+            "labelReaderDetectCountTitle": _FakeLabel(),
+        }
+        window = SimpleNamespace(**labels)
+        update_dashboard_cards = load_main_function(
+            "update_dashboard_cards",
+            {
+                "reader": SimpleNamespace(
+                    is_connected=lambda: True,
+                    get_tx_power=lambda: 2400,
+                ),
+                "settings": {
+                    "connection_type": "LAN",
+                    "reader_model": "UXA250-4",
+                    "host": "192.168.1.10",
+                    "tcp_port": 10001,
+                    "antenna_count": 4,
+                },
+                "latest_detect_count": 7,
+                "latest_read_title": "book",
+                "latest_read_epc": "E200",
+                "window": window,
+                "set_label_short": lambda label, text, max_len=42: label.setText(text),
+            },
+        )
+
+        update_dashboard_cards()
+
+        self.assertEqual(window.labelReaderAntenna.text(), "4")
+        self.assertEqual(window.labelReaderDetectCount.text(), "7冊")
+        self.assertEqual(window.labelReaderConnectionStatus.text(), "● 接続中")
+
+    def test_app_config_uses_v0134_checkout_defaults(self):
+        self.assertEqual(APP_VERSION, "0.13.4")
         self.assertEqual(DEFAULT_SETTINGS["lost_timeout_sec"], 5)
         self.assertEqual(DEFAULT_SETTINGS["lost_detection_count"], 3)
 
