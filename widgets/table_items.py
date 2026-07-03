@@ -45,25 +45,30 @@ def status_item(status):
     return item
 
 
+RSSI_THRESHOLD_GOOD = -60
+RSSI_THRESHOLD_MODERATE = -70
+RSSI_THRESHOLD_SLIGHTLY_WEAK = -80
+
+
 def rssi_level_info(rssi):
     """Return (value, label, bars, color, emoji) for a given RSSI value.
 
     Levels:
-        >= -60  良好   🟢  3 bars
-        >= -70  普通   🟡  2 bars
-        >= -80  やや弱 🟠  1 bar
-        < -80   弱     🔴  1 bar
+        >= RSSI_THRESHOLD_GOOD           良好   🟢  3 bars
+        >= RSSI_THRESHOLD_MODERATE       普通   🟡  2 bars
+        >= RSSI_THRESHOLD_SLIGHTLY_WEAK  やや弱 🟠  1 bar
+        <  RSSI_THRESHOLD_SLIGHTLY_WEAK  弱     🔴  1 bar
     """
     try:
         value = int(rssi)
     except Exception:
         return None, "-", 0, "#666666", ""
 
-    if value >= -60:
+    if value >= RSSI_THRESHOLD_GOOD:
         return value, "良好", 3, "#2e7d32", "🟢"
-    elif value >= -70:
+    elif value >= RSSI_THRESHOLD_MODERATE:
         return value, "普通", 2, "#f9a825", "🟡"
-    elif value >= -80:
+    elif value >= RSSI_THRESHOLD_SLIGHTLY_WEAK:
         return value, "やや弱", 1, "#e65100", "🟠"
     else:
         return value, "弱", 1, "#c62828", "🔴"
