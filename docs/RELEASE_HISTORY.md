@@ -2,6 +2,13 @@
 
 
 
+## v0.12.8
+
+- `reader/protocol/` を追加し、ART Finex UHF Reader のコマンド生成・BCC・レスポンス検証を共通化
+- `reader/tcp_reader.py` : LAN接続時の送信出力設定 / 取得を実装
+- `main.py` : 未実装機能が残る場合でも原因が分かる電波強度ログへ改善
+- タグ読取 / Inventory は今回未実装
+
 ## v0.12.7
 
 - `reader/tcp_reader.py` : LAN接続処理を実装（TCP socket による接続・切断・状態確認）
