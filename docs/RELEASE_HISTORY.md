@@ -1,5 +1,16 @@
 # NCC UHF Manager Release History
 
+## v0.13.5
+
+- `widgets/table_items.py` : RSSI表示を「色付き絵文字バー + dBm 数値」形式へ変更
+  - `rssi_level_info` : 判定を4段階（良好 / 普通 / やや弱 / 弱）に拡張し、絵文字 (🟢🟡🟠🔴) と対応色を追加
+    - 閾値: >= -60 → 良好 🟢 3バー、>= -70 → 普通 🟡 2バー、>= -80 → やや弱 🟠 1バー、< -80 → 弱 🔴 1バー
+  - `set_rssi_cell` : 表示テキストを `🟢■■■  -45` 形式に変更
+  - ツールチップを `RSSI: -53 dBm\n判定: 良好` の2行形式へ変更
+  - 状態表示・CSV保存には影響なし
+- `tests/test_table_items.py` : `RssiLevelInfoTests` を追加（4段階・境界値・無効値・表示形式・ツールチップ形式を検証）
+- `app_config.py` : バージョンを `0.13.5` に更新
+
 ## v0.13.4
 
 - `main.py` : 複数アンテナ読取結果を EPC 単位で重複排除し、同一EPCを1行表示・1冊カウントへ統一
