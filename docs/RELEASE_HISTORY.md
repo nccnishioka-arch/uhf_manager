@@ -1,5 +1,13 @@
 # NCC UHF Manager Release History
 
+## v0.13.1
+
+- `main.py` : LAN接続時も `antenna_count` 設定に応じて ANT1〜ANT4 のタグをフィルタリング
+  - Inventory応答に含まれる各タグの `ant` 番号が `1 ≤ ant ≤ antenna_count` の範囲内のみを処理対象とする
+  - `set_antenna()` は呼び出さず、単一の Inventory コマンドで全タグを取得してソフトウェアでフィルタリング
+  - USB / UART の既存アンテナ切替ループは変更なし
+- `tests/test_main_regressions.py` : LAN アンテナフィルタリングのテスト追加
+
 ## v0.13.0
 
 - `reader/reader_manager.py` : `232C(UART)` 設定値を UART として扱えるよう補正
