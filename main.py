@@ -848,14 +848,19 @@ def save_csv():
         writer = csv.writer(f)
         writer.writerow(["EPC", "書籍名", "RSSI", "ANT", "状態"])
 
+        epc_by_row = {row_index: epc for epc, row_index in table_rows_by_epc.items()}
+
         for row in range(window.tableTags.rowCount()):
             details = table_details_by_row.get(row, {})
+            title_item = window.tableTags.item(row, 0)
+            ant_item = window.tableTags.item(row, 2)
+            status_item_obj = window.tableTags.item(row, 3)
             writer.writerow([
-                details.get("epc", ""),
-                details.get("title", ""),
+                details.get("epc", epc_by_row.get(row, "")),
+                details.get("title", title_item.text() if title_item else ""),
                 details.get("rssi", ""),
-                details.get("ant", ""),
-                details.get("status", ""),
+                details.get("ant", ant_item.text() if ant_item else ""),
+                details.get("status", status_item_obj.text() if status_item_obj else ""),
             ])
 
     log(f"CSV保存: {path}")

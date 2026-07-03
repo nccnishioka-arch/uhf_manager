@@ -1,7 +1,5 @@
 # NCC UHF Manager Release History
 
-
-
 ## v0.13.0
 
 - `reader/reader_manager.py` : `232C(UART)` 設定値を UART として扱えるよう補正
