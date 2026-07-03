@@ -826,16 +826,31 @@ def load_books_from_path(path):
         return False
 
     count = 0
+    rows = None
+    encodings = ("utf-8-sig", "cp932", "shift_jis")
+    last_error = None
 
-    conn = get_connection()
-    cur = conn.cursor()
+    for encoding in encodings:
+        try:
+            with open(path, newline="", encoding=encoding) as f:
+                reader_csv = csv.reader(f)
+                rows = list(reader_csv)
+            break
+        except UnicodeError as e:
+            last_error = e
+        except (OSError, csv.Error) as e:
+            log(f"書籍マスタ読込失敗: {e}", "ERROR")
+            return False
 
-    with open(path, newline="", encoding="utf-8-sig") as f:
-        reader_csv = csv.reader(f)
-        rows = list(reader_csv)
+    if rows is None:
+        log(
+            f"書籍マスタ読込失敗: 文字コード判定失敗 ({', '.join(encodings)}) "
+            f"{str(last_error)}",
+            "ERROR"
+        )
+        return False
 
     if not rows:
-        conn.close()
         log("書籍マスタ読込: 0件")
         return False
 
@@ -851,6 +866,9 @@ def load_books_from_path(path):
         epc_index = 0
         title_index = 1
         data_rows = rows
+
+    conn = get_connection()
+    cur = conn.cursor()
 
     # 書籍マスタはCSV内容で入れ替える
     cur.execute("DELETE FROM books")
