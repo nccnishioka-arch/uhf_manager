@@ -648,7 +648,7 @@ class MainRegressionTests(unittest.TestCase):
             "latest_detect_count": 0,
         }, table, table_rows_by_epc, table_details_by_row
 
-    def test_read_once_rssi_none_dash_string_does_not_crash(self):
+    def test_read_once_handles_invalid_rssi_values(self):
         """None / "-" / 文字列 の RSSI が来ても例外で落ちず、弱い値として扱われること。"""
         # ANT1: rssi=None, ANT2: rssi="-", ANT3: rssi="bad", ANT4: rssi=-65 (正常)
         tags_by_read = [
@@ -676,7 +676,7 @@ class MainRegressionTests(unittest.TestCase):
         row = table_rows_by_epc["E200RSSI"]
         self.assertEqual(table_details_by_row[row]["rssi"], -65)
 
-    def test_read_once_rssi_only_bad_values_does_not_crash(self):
+    def test_read_once_handles_all_invalid_rssi_values(self):
         """全 ANT で RSSI が不正でも例外なく動作し EPC は1行になること。"""
         tags_by_read = [
             [{"epc": "E200BAD", "rssi": None}],
