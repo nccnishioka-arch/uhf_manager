@@ -7,10 +7,20 @@ from reader.usb_reader import UsbReader
 
 
 class ReaderManagerTests(unittest.TestCase):
-    def test_normalize_connection_type_supports_uart_aliases(self):
-        self.assertEqual(normalize_connection_type("UART"), "UART")
-        self.assertEqual(normalize_connection_type("232C(UART)"), "UART")
-        self.assertEqual(normalize_connection_type("RS232C(UART)"), "UART")
+    def test_normalize_connection_type_absorbs_ui_and_saved_values(self):
+        cases = {
+            None: "USB",
+            "": "USB",
+            "USB": "USB",
+            "LAN": "LAN",
+            "UART": "UART",
+            "232C(UART)": "UART",
+            "RS232C(UART)": "UART",
+        }
+
+        for raw_value, expected in cases.items():
+            with self.subTest(raw_value=raw_value):
+                self.assertEqual(normalize_connection_type(raw_value), expected)
 
     def test_create_returns_uart_reader_for_uart_alias(self):
         reader = ReaderManager.create({"connection_type": "232C(UART)"})
