@@ -28,7 +28,13 @@ Windows / Raspberry Pi 対応 UHF RFID 管理アプリケーション
 
 
 
-Current Version : v0.12.9
+Current Version : v0.13.0
+
+## v0.13.0
+
+- 分割後の接続方式切替を見直し、USB / UART / LAN の既存接続フローを復旧
+- 設定保存後の Reader 再生成、LAN 読取、CSV保存、クリア後状態更新を復旧
+- 既存機能の動作復旧を優先し、新機能追加は行わない
 
 ## v0.12.9
 

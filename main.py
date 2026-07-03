@@ -23,9 +23,16 @@ from PySide6.QtWidgets import (
     QTableWidgetItem,
 )
 
-from reader.reader_manager import ReaderManager
+from reader.reader_manager import ReaderManager, normalize_connection_type
 from reader.exceptions import ReaderConnectionError
-from widgets.table_items import make_table_item, shorten_text, status_item, set_rssi_cell
+from widgets.table_items import (
+    make_table_item,
+    set_rssi_cell,
+    shorten_text,
+    status_color_info,
+    status_display,
+    status_item,
+)
 from dialogs import settings_dialog
 
 settings = load_settings()
@@ -456,6 +463,12 @@ def update_dashboard_cards():
             }}
         """)
 
+    if hasattr(window, "labelLatestBookCard"):
+        set_label_short(window.labelLatestBookCard, latest_read_title, 34)
+
+    if hasattr(window, "labelLatestEpcCard"):
+        set_label_short(window.labelLatestEpcCard, latest_read_epc, 34)
+
     title_names = [
         "labelReaderModelTitle",
         "labelReaderStatusTitle",
@@ -640,12 +653,15 @@ def setup_table():
     window.tableTags.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
 
 def connect_reader():
+    global reader
+
     try:
         if reader.is_connected():
             log("すでに接続済みです")
             update_dashboard_cards()
             return
 
+        reader = ReaderManager.create(settings)
         connection_type = settings.get("connection_type", "USB")
 
         if connection_type == "LAN":
@@ -699,20 +715,26 @@ def read_once():
             return
 
         tags = []
+        connection_type = normalize_connection_type(
+            settings.get("connection_type", "USB")
+        )
 
-        antenna_count = int(settings.get("antenna_count", 1))
+        if connection_type == "LAN":
+            tags = reader.read_tags()
+        else:
+            antenna_count = int(settings.get("antenna_count", 1))
 
-        for ant_no in range(1, antenna_count + 1):
-            try:
-                reader.set_antenna(ant_no)
-                ant_tags = reader.read_tags()
+            for ant_no in range(1, antenna_count + 1):
+                try:
+                    reader.set_antenna(ant_no)
+                    ant_tags = reader.read_tags()
 
-                for tag in ant_tags:
-                    tag["ant"] = ant_no
+                    for tag in ant_tags:
+                        tag["ant"] = ant_no
 
-                tags.extend(ant_tags)
-            except Exception as e:
-                log(f"ANT{ant_no} 読取失敗: {e}")
+                    tags.extend(ant_tags)
+                except Exception as e:
+                    log(f"ANT{ant_no} 読取失敗: {e}")
 
         current_epcs = set()
 
@@ -795,9 +817,19 @@ def stop_reading():
 
 
 def clear_table():
+    global latest_read_title, latest_read_epc, latest_detect_count
+
     seen_epcs.clear()
+    tag_states.clear()
+    active_taken.clear()
+    table_rows_by_epc.clear()
+    table_details_by_row.clear()
     title_display_mode_by_epc.clear()
+    latest_read_title = "-"
+    latest_read_epc = "-"
+    latest_detect_count = 0
     window.tableTags.setRowCount(0)
+    update_dashboard_cards()
     log("表示をクリアしました")
 
 
@@ -816,12 +848,21 @@ def save_csv():
         writer = csv.writer(f)
         writer.writerow(["EPC", "書籍名", "RSSI", "ANT", "状態"])
 
+        # 通常は詳細キャッシュを使い、欠落時のみ表示テーブル/行マップから補完する。
+        epc_by_row = {row_index: epc for epc, row_index in table_rows_by_epc.items()}
+
         for row in range(window.tableTags.rowCount()):
-            values = []
-            for col in range(window.tableTags.columnCount()):
-                item = window.tableTags.item(row, col)
-                values.append(item.text() if item else "")
-            writer.writerow(values)
+            details = table_details_by_row.get(row, {})
+            title_item = window.tableTags.item(row, 0)
+            ant_item = window.tableTags.item(row, 2)
+            status_item_obj = window.tableTags.item(row, 3)
+            writer.writerow([
+                details.get("epc", epc_by_row.get(row, "")),
+                details.get("title", title_item.text() if title_item else ""),
+                details.get("rssi", ""),
+                details.get("ant", ant_item.text() if ant_item else ""),
+                details.get("status", status_item_obj.text() if status_item_obj else ""),
+            ])
 
     log(f"CSV保存: {path}")
 
@@ -962,11 +1003,32 @@ def show_ranking():
 
 
 def show_settings():
-    global settings, LOST_TIMEOUT_SEC, AUTO_BOOKMASTER_PATH
+    global settings, LOST_TIMEOUT_SEC, AUTO_BOOKMASTER_PATH, reader
+
+    old_connection_type = normalize_connection_type(
+        settings.get("connection_type", "USB")
+    )
 
     result = settings_dialog.show_settings(window, reader, settings, timer, log)
     if result is not None:
         LOST_TIMEOUT_SEC, AUTO_BOOKMASTER_PATH = result
+        new_connection_type = normalize_connection_type(
+            settings.get("connection_type", "USB")
+        )
+
+        if old_connection_type != new_connection_type:
+            if timer.isActive():
+                timer.stop()
+            if reader.is_connected():
+                try:
+                    reader.disconnect()
+                except Exception as e:
+                    log(f"接続方式切替時の切断失敗: {e}", "WARN")
+            reader = ReaderManager.create(settings)
+            clear_table()
+            log("接続方式変更を保存しました。再接続してください。", "WARN")
+
+        update_dashboard_cards()
 
 def auto_startup():
     if settings.get("auto_connect", True):

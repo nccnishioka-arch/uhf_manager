@@ -4,6 +4,7 @@ from PySide6.QtWidgets import QMessageBox
 
 from serial.tools import list_ports
 
+from reader.reader_manager import normalize_connection_type
 from reader.uhf_reader import UHFReader
 from services.settings_service import save_settings
 
@@ -69,7 +70,10 @@ def show_settings(parent_window, reader, settings, timer, log_func):
     dialog = loader.load(ui_file, parent_window)
     ui_file.close()
 
-    dialog.comboConnectionType.setCurrentText(settings.get("connection_type", "USB"))
+    connection_type = settings.get("connection_type", "USB")
+    if normalize_connection_type(connection_type) == "UART":
+        connection_type = "232C(UART)"
+    dialog.comboConnectionType.setCurrentText(connection_type)
     detected_port = get_preferred_serial_port()
     configured_port = settings.get("port", "/dev/ttyUSB0")
     dialog.linePort.setText(configured_port or detected_port or "/dev/ttyUSB0")
@@ -86,10 +90,12 @@ def show_settings(parent_window, reader, settings, timer, log_func):
     dialog.spinTxPower.setValue(int(settings.get("tx_power", 2400)))
 
     def update_connection_fields():
-        connection_type = dialog.comboConnectionType.currentText()
+        connection_type = normalize_connection_type(
+            dialog.comboConnectionType.currentText()
+        )
 
         is_lan = connection_type == "LAN"
-        is_serial = connection_type in ("USB", "232C(UART)")
+        is_serial = connection_type in ("USB", "UART")
 
         dialog.linePort.setEnabled(is_serial)
         dialog.comboBaudrate.setEnabled(is_serial)
@@ -102,6 +108,8 @@ def show_settings(parent_window, reader, settings, timer, log_func):
 
     if hasattr(dialog, "labelReaderConnection"):
         connection_type = settings.get("connection_type", "USB")
+        if normalize_connection_type(connection_type) == "UART":
+            connection_type = "232C(UART)"
         if connection_type == "LAN":
             target = f'{settings.get("host", "-")}:{settings.get("tcp_port", "-")}'
         else:
