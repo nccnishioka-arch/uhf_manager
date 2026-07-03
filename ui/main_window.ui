@@ -56,7 +56,7 @@
            <item row="3" column="0"><widget class="QLabel" name="labelReaderTargetTitle"><property name="text"><string>接続先</string></property></widget></item>
            <item row="3" column="1"><widget class="QLabel" name="labelReaderTarget"><property name="text"><string>-</string></property></widget></item>
 
-           <item row="4" column="0"><widget class="QLabel" name="labelReaderAntennaTitle"><property name="text"><string>現在ANT</string></property></widget></item>
+           <item row="4" column="0"><widget class="QLabel" name="labelReaderAntennaTitle"><property name="text"><string>ANT数</string></property></widget></item>
            <item row="4" column="1"><widget class="QLabel" name="labelReaderAntenna"><property name="text"><string>-</string></property></widget></item>
 
            <item row="5" column="0"><widget class="QLabel" name="labelReaderTxPowerTitle"><property name="text"><string>送信出力</string></property></widget></item>

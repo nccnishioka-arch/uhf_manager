@@ -405,15 +405,9 @@ def setup_dashboard_cards():
 
 def update_dashboard_cards():
     conn = "接続中" if reader.is_connected() else "未接続"
-    ant = "-"
     tx = "-"
 
     if reader.is_connected():
-        try:
-            ant = reader.get_antenna()
-        except Exception:
-            ant = "-"
-
         try:
             tx = reader.get_tx_power()
         except Exception:
@@ -427,11 +421,16 @@ def update_dashboard_cards():
     else:
         target = settings.get("port", "-")
 
+    try:
+        antenna_count = int(settings.get("antenna_count", 1))
+    except (TypeError, ValueError):
+        antenna_count = 1
+
     values = {
         "labelReaderModel": reader_model,
         "labelReaderConnectionType": connection_type,
         "labelReaderTarget": target,
-        "labelReaderAntenna": f"ANT{ant}" if ant != "-" else "-",
+        "labelReaderAntenna": str(antenna_count),
         "labelReaderTxPower": str(tx),
         "labelReaderDetectCount": f"{latest_detect_count}冊",
     }
@@ -717,13 +716,22 @@ def connect_reader():
 
 
 def read_once():
+    def _rssi_value(tag):
+        try:
+            return int(tag.get("rssi"))
+        except Exception:
+            return -999
+
     try:
         if not reader.is_connected():
             log("ERROR: リーダ未接続です")
             return
 
         tags = []
-        antenna_count = int(settings.get("antenna_count", 1))
+        try:
+            antenna_count = int(settings.get("antenna_count", 1))
+        except (TypeError, ValueError):
+            antenna_count = 1
 
         for ant_no in range(1, antenna_count + 1):
             try:
@@ -737,31 +745,36 @@ def read_once():
             except Exception as e:
                 log(f"ANT{ant_no} 読取失敗: {e}")
 
-        current_epcs = set()
+        deduped_tags = {}
+        for tag in tags:
+            epc = tag.get("epc")
+            if not epc:
+                continue
 
-        if not tags:
+            existing = deduped_tags.get(epc)
+            if existing is None or _rssi_value(tag) >= _rssi_value(existing):
+                deduped_tags[epc] = tag
+
+        if not deduped_tags:
+            current_epcs = set()
             check_movements(current_epcs)
             return
 
-        now_text = datetime.now().strftime("%H:%M:%S")
+        current_epcs = set(deduped_tags.keys())
         new_count = 0
 
-        for tag in tags:
+        for tag in deduped_tags.values():
             epc = tag.get("epc")
             rssi = tag.get("rssi")
             ant = tag.get("ant")
 
-            if not epc:
-                continue
-
-            current_epcs.add(epc)
             title = get_book_title(epc)
             save_book_event(epc, rssi, ant)
 
             global latest_read_title, latest_read_epc, latest_detect_count
             latest_read_title = title if title and title != "未登録" else "未登録"
             latest_read_epc = epc
-            latest_detect_count = len(tags)
+            latest_detect_count = len(current_epcs)
             update_dashboard_cards()
 
             if epc in seen_epcs:
@@ -790,7 +803,7 @@ def read_once():
 
         check_movements(current_epcs)
         if new_count > 0:
-            log(f"新規タグ読取: {new_count}件 / 検出: {len(tags)}件", "INFO")
+            log(f"新規タグ読取: {new_count}件 / 検出: {len(current_epcs)}件", "INFO")
 
     except Exception as e:
         log(f"ERROR: {e}", "ERROR")
