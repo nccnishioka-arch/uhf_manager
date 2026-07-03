@@ -601,7 +601,7 @@ class MainRegressionTests(unittest.TestCase):
         self.assertEqual(table.rowCount(), 2)
         self.assertEqual(set(table_rows_by_epc.keys()), {"E200DUP", "E200UNIQ"})
         self.assertEqual(movement_calls, [{"E200DUP", "E200UNIQ"}])
-        self.assertEqual(globals_dict["latest_detect_count"], 2)
+        self.assertEqual(read_once.__globals__["latest_detect_count"], 2)
         self.assertEqual(len(save_calls), 2)
         self.assertEqual(
             sorted(epc for epc, _, _ in save_calls),
