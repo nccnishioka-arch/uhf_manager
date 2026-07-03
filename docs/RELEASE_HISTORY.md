@@ -1,5 +1,18 @@
 # NCC UHF Manager Release History
 
+## v0.13.4
+
+- `main.py` : 複数アンテナ読取結果を EPC 単位で重複排除し、同一EPCを1行表示・1冊カウントへ統一
+  - 同一EPCが複数ANTで読めた場合は、RSSIが強い読取結果を優先して ANT / RSSI を更新
+  - 検出冊数表示を EPC ユニーク数ベースに変更
+  - `check_movements` / `present` / `missed_count` / `active_taken` は従来どおり EPC 単位管理を維持
+- `main.py` / `ui/main_window.ui` : Reader情報の「現在ANT」を「ANT数」に変更し、設定中 `antenna_count` を表示
+  - LAN接続時の `ANT0` 表示を解消
+- `app_config.py` : バージョンを `0.13.4` に更新
+- `tests/test_main_regressions.py` : EPC重複排除・Reader ANT数表示・RSSI不正値ロバスト性の回帰テストを追加
+  - `test_read_once_rssi_none_dash_string_does_not_crash` : None / "-" / 文字列 の RSSI が来ても例外なく、弱い値として扱われることを検証
+  - `test_read_once_rssi_only_bad_values_does_not_crash` : 全 ANT で RSSI 不正でも EPC 1行にまとまることを検証
+
 ## v0.13.3
 
 - `main.py` : 持出判定を「未読秒数」だけで即判定せず、連続未検出回数も満たした場合のみ持出に変更
