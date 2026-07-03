@@ -28,7 +28,12 @@ Windows / Raspberry Pi 対応 UHF RFID 管理アプリケーション
 
 
 
-Current Version : v0.12.8
+Current Version : v0.12.9
+
+## v0.12.9
+
+- `reader/protocol/inventory.py` を追加し、Inventory コマンド生成 / 応答解析（EPC・RSSI）を共通化
+- `read_tags()` を USB / UART / LAN で共通利用できるように実装
 
 ## v0.12.8
 

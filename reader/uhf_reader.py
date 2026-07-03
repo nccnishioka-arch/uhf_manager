@@ -8,6 +8,11 @@ from reader.protocol.artfinex_protocol import (
     parse_set_tx_power_response,
     parse_tx_power_response,
 )
+from reader.protocol.inventory import (
+    INVENTORY_MSG_ID,
+    build_inventory_command,
+    parse_inventory_response,
+)
 
 
 class UHFReader:
@@ -167,48 +172,8 @@ class UHFReader:
         return parse_tx_power_response(res)
 
     def read_tags(self):
-        res = self._execute_command(0x65)
+        res = self._execute_command(INVENTORY_MSG_ID)
         if not res:
             return []
 
-        body = res[16:-1]
-        if len(body) < 2:
-            return []
-
-        tag_count = body[0]
-        status = body[1]
-
-        if status != 0:
-            return []
-
-        tags = []
-        offset = 2
-
-        for _ in range(tag_count):
-            if offset + 2 > len(body):
-                break
-
-            ant = body[offset]
-            data_len = body[offset + 1]
-            epc_len = data_len - 2
-
-            epc_start = offset + 2
-            epc_end = epc_start + epc_len
-            rssi_start = epc_end
-            rssi_end = rssi_start + 2
-
-            if rssi_end > len(body):
-                break
-
-            epc = body[epc_start:epc_end].hex().upper()
-            rssi = self._signed16(body[rssi_start:rssi_end])
-
-            tags.append({
-                "ant": ant,
-                "epc": epc,
-                "rssi": rssi,
-            })
-
-            offset = rssi_end
-
-        return tags
+        return parse_inventory_response(res)

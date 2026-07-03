@@ -8,6 +8,7 @@ from reader.protocol.artfinex_protocol import (
     parse_tx_power_response,
     validate_response,
 )
+from reader.protocol.inventory import build_inventory_command
 from reader.protocol.packet import build_command
 from reader.tcp_reader import TcpReader
 
@@ -65,6 +66,35 @@ class ProtocolAndTcpReaderTests(unittest.TestCase):
 
         with self.assertRaises(ReaderProtocolError):
             reader.get_tx_power()
+
+    def test_read_tags_returns_empty_when_no_tags(self):
+        # status=0, tag_count=0
+        payload = bytes([0x00, 0x00])
+        response = build_command(0x65, payload)
+        reader = TcpReader()
+        reader._socket = FakeSocket(response)
+        reader._state = ConnectionState.CONNECTED
+
+        tags = reader.read_tags()
+        self.assertEqual(tags, [])
+        self.assertEqual(reader._socket.sent, [build_inventory_command()])
+
+    def test_read_tags_returns_tag_list(self):
+        epc_bytes = bytes.fromhex("E2001234567890ABCDEF1234")
+        rssi_bytes = (0xFF9C).to_bytes(2, byteorder="big")  # -100 dBm
+        data_len = len(epc_bytes) + len(rssi_bytes)  # epc + rssi = data_len
+        # body: tag_count=1, status=0, ant, data_len, epc, rssi
+        payload = bytes([0x01, 0x00, 0x01, data_len]) + epc_bytes + rssi_bytes
+        response = build_command(0x65, payload)
+        reader = TcpReader()
+        reader._socket = FakeSocket(response)
+        reader._state = ConnectionState.CONNECTED
+
+        tags = reader.read_tags()
+        self.assertEqual(len(tags), 1)
+        self.assertEqual(tags[0]["ant"], 1)
+        self.assertEqual(tags[0]["epc"], epc_bytes.hex().upper())
+        self.assertEqual(tags[0]["rssi"], -100)
 
 
 if __name__ == "__main__":
