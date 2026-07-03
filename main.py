@@ -25,7 +25,14 @@ from PySide6.QtWidgets import (
 
 from reader.reader_manager import ReaderManager, normalize_connection_type
 from reader.exceptions import ReaderConnectionError
-from widgets.table_items import make_table_item, shorten_text, status_item, set_rssi_cell
+from widgets.table_items import (
+    make_table_item,
+    set_rssi_cell,
+    shorten_text,
+    status_color_info,
+    status_display,
+    status_item,
+)
 from dialogs import settings_dialog
 
 settings = load_settings()
