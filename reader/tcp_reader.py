@@ -10,6 +10,7 @@ from reader.protocol.artfinex_protocol import (
     parse_set_tx_power_response,
     parse_tx_power_response,
 )
+from reader.protocol.inventory import build_inventory_command, parse_inventory_response
 
 
 class TcpReader(BaseReader):
@@ -108,7 +109,7 @@ class TcpReader(BaseReader):
         body = self._recv_exact(data_len + 1)
         return header + body
 
-    # --- 将来実装予定（タグ読取・アンテナ・インベントリ は対象外） ---
+    # --- 将来実装予定（アンテナ切替は対象外） ---
 
     def set_antenna(self, ant_no):
         raise NotImplementedError
@@ -127,4 +128,6 @@ class TcpReader(BaseReader):
         return parse_tx_power_response(response)
 
     def read_tags(self):
-        raise NotImplementedError
+        self._send(build_inventory_command())
+        response = self._read_response()
+        return parse_inventory_response(response)
