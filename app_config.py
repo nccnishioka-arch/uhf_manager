@@ -1,6 +1,6 @@
 from pathlib import Path
 
-APP_VERSION = "0.12.7"
+APP_VERSION = "0.12.8"
 
 DB_PATH = "data/uhf_manager.db"
 SETTINGS_PATH = "config/settings.json"

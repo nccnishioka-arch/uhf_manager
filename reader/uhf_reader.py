@@ -1,6 +1,14 @@
 import socket
 import serial
 
+from reader.protocol import build_command, get_data_length, get_payload
+from reader.protocol.artfinex_protocol import (
+    build_get_tx_power_command,
+    build_set_tx_power_command,
+    parse_set_tx_power_response,
+    parse_tx_power_response,
+)
+
 
 class UHFReader:
     def __init__(self):
@@ -76,30 +84,15 @@ class UHFReader:
 
         raise RuntimeError("リーダ未接続です")
 
-    def _bcc(self, data: bytes) -> int:
-        return sum(data) & 0xFF
-
     def _make_cb_command(self, msg_id: int, payload: bytes = b"") -> bytes:
-        length = len(payload)
-        cmd = bytearray([
-            0x53, 0x00, 0x00, 0x00,
-            msg_id,
-            0x00,
-            length & 0xFF,
-            (length >> 8) & 0xFF,
-            0x20, 0x00, 0x00, 0x00,
-            0x00, 0x00, 0x00, 0x00,
-        ])
-        cmd.extend(payload)
-        cmd.append(self._bcc(cmd))
-        return bytes(cmd)
+        return build_command(msg_id, payload)
 
     def _read_response(self):
         header = self._recv(16)
         if len(header) < 16:
             return b""
 
-        data_len = header[6] + (header[7] << 8)
+        data_len = get_data_length(header)
         body = self._recv(data_len + 1)
         return header + body
 
@@ -145,29 +138,33 @@ class UHFReader:
     def set_tx_power(self, power: int):
         if power < 0 or power > 2400:
             raise ValueError("送信出力は0〜2400で指定してください")
+        if not self.is_connected():
+            raise RuntimeError("リーダ未接続です")
 
-        payload = power.to_bytes(2, byteorder="big", signed=False)
-        res = self._execute_command(0x16, payload)
+        self._clear_buffers()
+        self._send(build_set_tx_power_command(power))
+        res = self._read_response()
 
         if not res:
             return False
 
-        body = res[16:-1]
-        if len(body) == 0:
-            return True
-
-        return body[0] == 0
+        return parse_set_tx_power_response(res)
 
     def get_tx_power(self):
-        res = self._execute_command(0x1B)
+        if not self.is_connected():
+            raise RuntimeError("リーダ未接続です")
+
+        self._clear_buffers()
+        self._send(build_get_tx_power_command())
+        res = self._read_response()
         if not res:
             return None
 
-        body = res[16:-1]
+        body = get_payload(res)
         if len(body) < 2:
             return None
 
-        return int.from_bytes(body[0:2], byteorder="big", signed=False)
+        return parse_tx_power_response(res)
 
     def read_tags(self):
         res = self._execute_command(0x65)
